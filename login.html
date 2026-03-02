@@ -1,1 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FRC TCG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; border: none; }
 
+    body {
+      font-family: 'Righteous', sans-serif;
+      background: #eeeeee;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    /* ── SPLASH ── */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #eeeeee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      transition: opacity 1s ease;
+    }
+    #splash.fade-out { opacity: 0; pointer-events: none; }
+
+    #splash img {
+      width: clamp(160px, 40vw, 260px);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    /* ── LOGIN SCREEN ── */
+    #loginScreen {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    #loginScreen.visible { opacity: 1; }
+
+    /* Header */
+    .login-header {
+      height: 18vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-header h1 {
+      font-size: clamp(48px, 12vw, 72px);
+      color: #ff8a80;
+    }
+
+    /* Card tray style container */
+    .login-tray {
+      background: #82b1ff;
+      border: 10px solid #448aff;
+      border-radius: 40px;
+      margin: 0 auto;
+      width: 90%;
+      max-width: 460px;
+      padding: 35px 30px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex-grow: 1;
+      max-height: 70vh;
+    }
+
+    .tray-title {
+      font-size: 32px;
+      color: white;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-family: 'Righteous', sans-serif;
+      font-size: 16px;
+      background: white;
+      color: #333;
+    }
+    input::placeholder { color: #aaa; }
+
+    .btn-main {
+      background: #ff80ab;
+      color: white;
+      font-family: 'Righteous', sans-serif;
+      font-size: 22px;
+      padding: 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #c2185b;
+      text-align: center;
+      transition: all 0.15s;
+      margin-top: 4px;
+    }
+    .btn-main:active { transform: translateY(3px); box-shadow: 0 2px 0 #c2185b; }
+
+    .error-box {
+      background: white;
+      color: #ff4444;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+
+    /* Footer signup link */
+    .login-footer {
+      height: 12vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 15px;
+      color: #888;
+    }
+    .login-footer span {
+      color: #448aff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── SIGNUP SCREEN ── */
+    #signupScreen {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    #signupScreen.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .signup-header {
+      height: 18vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .signup-header h1 {
+      font-size: clamp(48px, 12vw, 72px);
+      color: #ff8a80;
+    }
+
+    .signup-footer {
+      height: 12vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 15px;
+      color: #888;
+    }
+    .signup-footer span {
+      color: #448aff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <img src="logo.png" alt="FRC TCG">
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <div class="login-header"><h1>FRC TCG</h1></div>
+
+    <div class="login-tray">
+      <div class="tray-title">LOGIN</div>
+      <input type="email" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <div class="error-box" id="loginError"></div>
+      <div class="btn-main" onclick="handleLogin()">LET'S GO →</div>
+    </div>
+
+    <div class="login-footer">
+      Don't have an account? <span onclick="showSignup()">Sign Up</span>
+    </div>
+  </div>
+
+  <!-- SIGNUP SCREEN -->
+  <div id="signupScreen">
+    <div class="signup-header"><h1>FRC TCG</h1></div>
+
+    <div class="login-tray">
+      <div class="tray-title">SIGN UP</div>
+      <input type="text" id="signupFirstName" placeholder="First Name" />
+      <input type="email" id="signupEmail" placeholder="Email" />
+      <input type="password" id="signupPassword" placeholder="Password" />
+      <div class="error-box" id="signupError"></div>
+      <div class="btn-main" onclick="handleSignup()">CREATE ACCOUNT →</div>
+    </div>
+
+    <div class="signup-footer">
+      Already have an account? <span onclick="showLogin()">Log In</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import {
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // If already logged in skip straight to app
+    onAuthStateChanged(auth, user => {
+      if (user) window.location.href = 'app.html';
+    });
+
+    // Splash → Login after 7 seconds
+    setTimeout(() => {
+      const splash = document.getElementById('splash');
+      const loginScreen = document.getElementById('loginScreen');
+      splash.classList.add('fade-out');
+      setTimeout(() => {
+        splash.style.display = 'none';
+        loginScreen.classList.add('visible');
+      }, 1000);
+    }, 7000);
+
+    window.showSignup = function() {
+      document.getElementById('loginScreen').style.opacity = '0';
+      document.getElementById('loginScreen').style.pointerEvents = 'none';
+      document.getElementById('signupScreen').classList.add('visible');
+    };
+
+    window.showLogin = function() {
+      document.getElementById('signupScreen').classList.remove('visible');
+      document.getElementById('loginScreen').style.opacity = '1';
+      document.getElementById('loginScreen').style.pointerEvents = 'all';
+    };
+
+    window.handleLogin = async function() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const errorEl = document.getElementById('loginError');
+      errorEl.style.display = 'none';
+
+      if (!email || !password) {
+        errorEl.innerText = 'Please fill in all fields!';
+        errorEl.style.display = 'block';
+        return;
+      }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = 'app.html';
+      } catch (err) {
+        const msgs = {
+          'auth/invalid-credential': 'Wrong email or password!',
+          'auth/user-not-found': 'No account with that email!',
+          'auth/wrong-password': 'Wrong password!',
+          'auth/invalid-email': 'Invalid email address!',
+        };
+        errorEl.innerText = msgs[err.code] || 'Something went wrong. Try again!';
+        errorEl.style.display = 'block';
+      }
+    };
+
+    window.handleSignup = async function() {
+      const firstName = document.getElementById('signupFirstName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value.trim();
+      const errorEl = document.getElementById('signupError');
+      errorEl.style.display = 'none';
+
+      if (!firstName || !email || !password) {
+        errorEl.innerText = 'Please fill in all fields!';
+        errorEl.style.display = 'block';
+        return;
+      }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          firstName,
+          email,
+          firstWin: false,
+          createdAt: new Date().toISOString()
+        });
+        window.location.href = 'app.html';
+      } catch (err) {
+        const msgs = {
+          'auth/email-already-in-use': 'Email already in use!',
+          'auth/invalid-email': 'Invalid email address!',
+          'auth/weak-password': 'Password needs at least 6 characters!',
+        };
+        errorEl.innerText = msgs[err.code] || 'Something went wrong. Try again!';
+        errorEl.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>
