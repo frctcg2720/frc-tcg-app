@@ -1,1 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FRC TCG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; outline: none; border: none; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Righteous', sans-serif; background: #eeeeee; margin: 0; height: 100vh; width: 100vw; overflow: hidden; }
 
+    .game-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; position: absolute; top: 0; left: 0; }
+    .active-screen { display: flex !important; z-index: 100; }
+
+    /* BINDER */
+    .header { height: 15vh; display: flex; justify-content: center; align-items: center; padding: 5px; position: relative; }
+    .header h1 { font-size: 60px; color: #ff8a80; margin: 0; }
+    .logout-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: #ddd; color: #666; font-family: 'Righteous'; font-size: 13px; padding: 8px 16px; border-radius: 12px; cursor: pointer; }
+
+    .binder-tray { background: #82b1ff; border: 10px solid #448aff; margin: 0 auto; width: 90%; max-width: 860px; flex-grow: 1; display: flex; flex-direction: column; position: relative; border-radius: 40px; overflow: hidden; }
+    .scroll-container { width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; display: flex; align-items: flex-start; padding: 20px 30px 25px 30px; }
+    .card-list { display: flex; gap: 20px; align-items: center; }
+
+    .card { width: 200px; aspect-ratio: 2 / 3; background: #f5f5f5; border-radius: 20px; position: relative; cursor: pointer; flex-shrink: 0; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .card img { width: 100%; height: 100%; object-fit: contain; background: #222; }
+    .checkmark { position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; background: #ff80ab; border-radius: 50%; display: none; color: white; text-align: center; line-height: 40px; font-size: 24px; z-index: 5; }
+    .card.selected .checkmark { display: block; }
+
+    .input-bar { height: 12vh; display: flex; justify-content: center; align-items: center; gap: 15px; background: #eeeeee; }
+    .input-bar input { padding: 10px; border-radius: 12px; font-family: 'Righteous'; width: 140px; border: 2px solid #ddd; }
+    .btn-add { background: #ff80ab; color: white; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-family: 'Righteous'; }
+
+    .play-footer { height: 15vh; background: #424242; color: white; font-size: 70px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.2s; }
+    .play-ready { background: #ff8a80; }
+
+    /* LOBBY */
+    #screen-lobby { background: #ff8a80; align-items: center; justify-content: center; }
+    .lobby-title { font-size: 80px; color: white; margin-bottom: 20px; }
+    .lobby-box { background: white; padding: 40px; border-radius: 40px; text-align: center; width: 80%; max-width: 500px; }
+    .lobby-box input { padding: 10px; border-radius: 12px; font-family: 'Righteous'; border: 2px solid #ddd; }
+    .btn-lobby { background: #ff80ab; color: white; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-family: 'Righteous'; font-size: 16px; display: inline-block; margin: 4px 0; }
+    .big-code { font-size: 80px; color: #ff80ab; margin: 20px 0; letter-spacing: 5px; }
+
+    /* WAITING */
+    #screen-waiting { background: #82b1ff; align-items: center; justify-content: center; color: white; }
+
+    /* GAME */
+    #screen-game { background: #e9ecef; height: 100vh; justify-content: space-between; padding-bottom: 10px; }
+    .arena-half { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .arena-half:first-child { padding-top: 5px; }
+
+    .card-holder { background: #89b4ff; width: 90%; max-width: 650px; height: 32vh; border-radius: 40px; border: 8px solid #5c94ff; display: flex; justify-content: center; align-items: center; gap: 15px; padding: 15px; margin: 0 auto; overflow-x: auto; }
+    .stats-bar { display: flex; justify-content: space-between; width: 90%; max-width: 600px; font-size: 22px; color: #333; margin: 10px 0; }
+
+    .battle-card { height: 100%; aspect-ratio: 2 / 3; flex-shrink: 0; transition: all 0.3s ease; background: white; border-radius: 15px; overflow: hidden; cursor: pointer; }
+    .battle-card img { width: 100%; height: 100%; object-fit: contain; }
+    .active-card { outline: 6px solid #ff4081 !important; box-shadow: 0 0 20px #ff4081; transform: scale(1.05); z-index: 10; }
+
+    .turn-banner { background: #ff8a8a; width: 100%; text-align: center; color: white; padding: 10px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #turnAnnounce { font-size: 32px; margin: 0; }
+
+    .action-button { background: #ff8df0; color: white; width: 90%; max-width: 650px; padding: 15px; border-radius: 20px; font-family: 'Righteous'; font-size: 22px; margin: 10px auto; cursor: pointer; box-shadow: 0 4px 0 #d46cc8; display: block; text-align: center; }
+    .btn-disabled { background-color: #434343 !important; color: #888 !important; pointer-events: none !important; box-shadow: none !important; }
+
+    .action-menu { background: #ff85e1; padding: 10px; border-radius: 20px; width: 90%; max-width: 650px; margin: 0 auto; display: none; gap: 10px; }
+    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 4; }
+    .menu-btn { background: #ffc2feff; border-radius: 12px; padding: 12px; font-family: 'Righteous'; color: #595959; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.1); cursor: pointer; text-align: center; }
+    .swap-box { background: #ffc2feff; border-radius: 12px; padding: 10px; text-align: center; font-size: 12px; color: #595959; grid-column: span 2; display: flex; flex-direction: column; justify-content: center; cursor: pointer; }
+    .check-confirm { background: #ff6b6b; flex: 1; border-radius: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 30px; box-shadow: 0 3px 0 #d64545; }
+
+    .btn-confirm-swap { background: #ff6b6b; color: white; width: 90%; max-width: 650px; padding: 15px; border-radius: 20px; font-family: 'Righteous'; font-size: 30px; margin: 10px auto; cursor: pointer; box-shadow: 0 4px 0 #d64545; display: none; text-align: center; }
+
+    /* VICTORY */
+    #screen-victory { background: #ff8a8a; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s linear infinite; }
+    @keyframes confetti-fall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+  <!-- BINDER -->
+  <div id="screen-binder" class="game-screen active-screen">
+    <div class="header">
+      <h1>FRC TCG</h1>
+      <div class="logout-btn" onclick="doLogout()">LOGOUT</div>
+    </div>
+    <div class="binder-tray">
+      <div class="scroll-container">
+        <div id="binderGrid" class="card-list"></div>
+      </div>
+    </div>
+    <div class="input-bar">
+      <input type="text" id="nameIn" placeholder="Card Name">
+      <input type="text" id="verIn" placeholder="Version">
+      <button class="btn-add" onclick="addCard()">Add Card</button>
+    </div>
+    <div id="playBtn" class="play-footer" onclick="goToLobby()">PLAY</div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="screen-lobby" class="game-screen">
+    <h1 class="lobby-title">PLAY</h1>
+    <div class="lobby-box">
+      <h2>Hey, <span id="displayName">Player</span>!</h2>
+      <br>
+      <h2>Vs A Friend</h2>
+      <button class="btn-lobby" style="width:100%;" onclick="generateCode()">Generate Match Code</button>
+      <p style="margin:10px 0;">OR</p>
+      <input type="text" id="matchInput" placeholder="Enter Code" style="width:100%; text-align:center; margin-bottom:10px;">
+      <button class="btn-lobby" style="width:100%; background:#448aff;" onclick="joinMatch()">Join Match</button>
+      <br><br>
+      <button onclick="switchScreen('screen-binder')" style="background:none; color:#888; text-decoration:underline; cursor:pointer; font-family:Righteous; font-size:14px;">Back to Binder</button>
+    </div>
+  </div>
+
+  <!-- WAITING -->
+  <div id="screen-waiting" class="game-screen" style="background:#82b1ff; align-items:center; justify-content:center; color:white;">
+    <h1>MATCH CODE:</h1>
+    <div id="displayCode" class="big-code">000000</div>
+    <p>Waiting for opponent...</p>
+    <button onclick="cancelMatch()" style="margin-top:40px; color:white; background:rgba(0,0,0,0.2); padding:10px 20px; border-radius:10px; font-family:Righteous; cursor:pointer;">Cancel</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="game-screen">
+    <div class="arena-half">
+      <div class="card-holder" id="opponentSide"></div>
+      <div class="stats-bar">
+        <span id="oppEnergy">## Energy</span>
+        <span id="oppHP">### HP</span>
+      </div>
+    </div>
+    <div class="turn-banner"><h1 id="turnAnnounce">YOUR TURN</h1></div>
+    <div class="arena-half">
+      <div class="stats-bar">
+        <span id="myEnergy">## Energy</span>
+        <span id="myHP">### HP</span>
+      </div>
+      <div class="card-holder" id="mySide"></div>
+      <div class="action-container" style="width:100%;">
+        <button id="actionBtn" class="action-button" onclick="toggleActionMenu()">Action</button>
+        <button id="confirmSwapBtn" class="btn-confirm-swap" onclick="finishSwap()">✓</button>
+        <div id="actionMenu" class="action-menu">
+          <div class="menu-grid">
+            <button class="menu-btn" id="ability1Btn" onclick="useAbility(1, event)">Ability 1</button>
+            <button class="menu-btn" id="ability2Btn" onclick="useAbility(2, event)">Ability 2</button>
+            <div class="swap-box" onclick="startSwap()">
+              <strong>Swap Active Card - 1 NRG</strong>
+              <span style="font-size:10px; color:#888;">* Instead of doing an ability *</span>
+            </div>
+            <button class="menu-btn" id="skipBtn" style="grid-column:span 2; color:#ff6b6b;" onclick="skipTurn(event)">Skip My Turn</button>
+          </div>
+          <div id="finalConfirmBtn" class="check-confirm" onclick="confirmAndEndTurn()">✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VICTORY -->
+  <div id="screen-victory" class="game-screen" style="background:#ff8a8a; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+    <div id="confettiContainer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+    <div style="text-align:center; z-index:10;">
+      <h1 style="font-size:80px; color:#82b1ff; margin:20px 0;">GOOD GAME</h1>
+      <h1 id="winnerName" style="font-size:80px; color:white; margin:30px 0; text-shadow:4px 4px 0 rgba(0,0,0,0.2);">NAME WON!</h1>
+      <div id="firstWinMsg" style="display:none; background:white; color:#ff8a80; padding:20px 30px; border-radius:20px; font-size:20px; margin:0 20px 20px; line-height:1.5;">
+        🎉 Go to <strong>2720</strong> or <strong>2992</strong>'s pit to pick up your limited edition card!
+      </div>
+      <p style="color:white; font-size:18px; margin-top:30px; opacity:0.8; cursor:pointer;" onclick="window.location.reload()">Tap to return home</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db, rtdb } from './firebase-config.js';
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    // ── CARD DATA ──
+    const CARD_LINKS = [
+      "https://lh3.googleusercontent.com/d/1d_C2Fzm5fnSDF65_AU56NqB_UocBovp8","https://lh3.googleusercontent.com/d/1_vZPFk2AJ10I9VoFgm5FVskaqvqfj5j3","https://lh3.googleusercontent.com/d/1Y_BXW-3aLfWfVqoGeJapX7WUT2FENHFN","https://lh3.googleusercontent.com/d/1u7x6y2xBXnsSOIeY93WeWkows8rSxg1U","https://lh3.googleusercontent.com/d/188xeBaW9O_QJ_MOjqSyPEtlQxTr5BEE4","https://lh3.googleusercontent.com/d/1f7qwTj-UA5Y6g5Qjkx3lVu0FwxeEbUWv","https://lh3.googleusercontent.com/d/1c21QYGKsN-XAT7-Q5DwWJ_FsqdI2NOkQ","https://lh3.googleusercontent.com/d/1VIpusKbOvidxCZAvsgd7q7y4kMehzWgK","https://lh3.googleusercontent.com/d/1sue-vsPCYl3IK0sc9x051yHxsPc_a0m6","https://lh3.googleusercontent.com/d/1ze_DW6GWH9zzJWUEkPGW9j_XFFWV6FoI","https://lh3.googleusercontent.com/d/1X5HC5i_Ykseivrl7h-vtlelYPn7aovh4","https://lh3.googleusercontent.com/d/1rGPl9dS-uDvZ-5wfxKEp5sHlO3MPso_X","https://lh3.googleusercontent.com/d/1Ih69Dn37CNtOs72uQVlvOZaRyorljSLS","https://lh3.googleusercontent.com/d/19BJTVLdMQZBdS2hUHo7KhUZrHyZdUyRw","https://lh3.googleusercontent.com/d/1jx9LpM2GfXKZ4fln8DQcrWqzo_XH7LHM","https://lh3.googleusercontent.com/d/1iNGIlpHZ4aHWuODdYSzCr1wA4HI5Z8jM","https://lh3.googleusercontent.com/d/1RNTwUcjgKDxb6KQ2mhsgfO5ZE9hNk-Lh","https://lh3.googleusercontent.com/d/18qIZx5Xce7PRVpXj4qWfgmHYDhumIghV","https://lh3.googleusercontent.com/d/1vKJkzlYbcf9775t9uRgvAoLLsh-UI_sD","https://lh3.googleusercontent.com/d/1F6r2dlgcgX6RiJNWReFgBKYbFj1ZlzR7","https://lh3.googleusercontent.com/d/1xezc1bnX42jcZHfq-DpkcIgLqpQBLW-Q","https://lh3.googleusercontent.com/d/1iSjc5CWgH2Ea3opqMfNTn1bp4THTCIsU","https://lh3.googleusercontent.com/d/17DwRJZxxnPDUkMVQK6hJqYnrY7S8HYqU","https://lh3.googleusercontent.com/d/1Od8evvG9h9jGU0sNHBl99-0wZH8Bm6eq","https://lh3.googleusercontent.com/d/1dUdPZ6PhO-tSkfy1IxY225ISFmHm7gSS","https://lh3.googleusercontent.com/d/19QnXp5ZGqIRwwQc5Ko7buQ8zuBqO1Eq0","https://lh3.googleusercontent.com/d/1DRlZ5pkJ0SoVO8Ri-F6vniidRpFKXoOk","https://lh3.googleusercontent.com/d/1V_1yCpuIS-sK10JAhWUmZC2ed6ru674w","https://lh3.googleusercontent.com/d/1UstRTX3K9_SFfKgrVpCFaemcy18VR7vG","https://lh3.googleusercontent.com/d/16jnRzY7cYKvdYpFYiaHaJhmvVAwMR6im","https://lh3.googleusercontent.com/d/1UceyroWKqw2wgwSZ1L4GsvHKVyr6P89h","https://lh3.googleusercontent.com/d/1bqSsR1om7l1IvyEqSJGx6lR4TWtpMo7n","https://lh3.googleusercontent.com/d/1StCtnVVR-NfIvdRb1H-pfWeOWssqZYh8","https://lh3.googleusercontent.com/d/11fY3RKebeSu3D1kSwV4xWsASy-CwQHCK","https://lh3.googleusercontent.com/d/1gHqHvx8ytm2CN4xmpN3WlFAOTARU3XHn","https://lh3.googleusercontent.com/d/1QmUlfDAvhoomP6vlv7tsXsGzlTS5JvAZ","https://lh3.googleusercontent.com/d/1wXYZ7lNifC2m86EU4qxbAhfP4c-V7KLI","https://lh3.googleusercontent.com/d/1KHQ293RrwuKitNg4U_ze4AK7KOqQzkXI","https://lh3.googleusercontent.com/d/1pLhaf2T8PzSqNpVREC-cJ3A-MvZYw1kW","https://lh3.googleusercontent.com/d/1d3wHOp5-2m5JWiGbOYbFwiPp9h0inkOU","https://lh3.googleusercontent.com/d/172yb55YmZPu9T3suUTzD2pq8fPobPHxh","https://lh3.googleusercontent.com/d/1ZO9qAaaJer5UGFvt1WJJQhoIg1MIqNVZ","https://lh3.googleusercontent.com/d/1dB5Nn92i6NFrs7hO1FlR0o1glXrDPnSl","https://lh3.googleusercontent.com/d/1HB5lG9Zvy7fhLIW5fjUhOHxMgFpG__LH","https://lh3.googleusercontent.com/d/1PN4E7kV6wcSLOl2t9mlhpR3CoOjorUes","https://lh3.googleusercontent.com/d/1Wx9cw7UBYU0URqWAoRw-SBmAkilTLc2Q","https://lh3.googleusercontent.com/d/1MXdNW9w2FmbEHASsn4BdSVD3YCAKqei7","https://lh3.googleusercontent.com/d/17ZNHf6deryrGXV7C7PA96qnHKdRLVlKy","https://lh3.googleusercontent.com/d/1qRjZZD1qQdWMqw_jrQswbM3g94wzmACC","https://lh3.googleusercontent.com/d/1Ii1H3IQctcJ4Dy1aynUnLGokYNk7M_2h","https://lh3.googleusercontent.com/d/1OoWxdxs-D-65qt_1xW17VwVCAXW37SgP","https://lh3.googleusercontent.com/d/1sxI_r6aVwZaFpCt5r9CDOP9OUulzk_bg","https://lh3.googleusercontent.com/d/1vsu3Td4ugyKBrmDp-E-sFAIEIqKz8gyL","https://lh3.googleusercontent.com/d/1YKTeFyangtsqT6LAQViKBU6yr1whQiTl","https://lh3.googleusercontent.com/d/1PEFKxws4B-sIVZzjsBgEp6rvrJG0EMRi","https://lh3.googleusercontent.com/d/1gtssYihcp5hMPAS9-fihLq88P0ZMiysb","https://lh3.googleusercontent.com/d/1UKFzl5YiPWfRb-nk5a1uNiB_UUqdgB3C","https://lh3.googleusercontent.com/d/1cqsy5a__BuDUZqNsK2jsjZUputtwDPUG","https://lh3.googleusercontent.com/d/1gEZs_yohznRHGkmW6bT1LvloibIFHP1p","https://lh3.googleusercontent.com/d/1Sch1VtSxFA-9uvd-taxIKofFD425GdDX","https://lh3.googleusercontent.com/d/1yU31kWG5DaV0w2xX1fN0L1ntafAO-kJm","https://lh3.googleusercontent.com/d/1g-s25M3goJa1wEdZNH6qRNdymZ_I1za-","https://lh3.googleusercontent.com/d/1ULHt05r2zN_KkSYpv1znox-o4S8Hw1BI","https://lh3.googleusercontent.com/d/1d5aDsC5rPEXtaNHHF5sITq8T67zSk0CF","https://lh3.googleusercontent.com/d/10HMLVU7Tgs-nFLCsPGYUeubW9IhwKl65","https://lh3.googleusercontent.com/d/1wNHnaBC7K971-o3NQZfubMYsu8wsm86u","https://lh3.googleusercontent.com/d/1LDaONcRAtKEz3aTPLe95LHQ05pa2C_XS","https://lh3.googleusercontent.com/d/1aQeIRS2pLkjjWeOdTlKiX_GHa6WiZgtD","https://lh3.googleusercontent.com/d/1gPAP8MvXMsa66TH4GeEW3uLjBwfQjlUW","https://lh3.googleusercontent.com/d/1Q1-giKKB7hKW4OYNez4OdNH3KMIAhyvF","https://lh3.googleusercontent.com/d/1asCglifrTexNvG-e_mOoaxLjWOEzE7Ls","https://lh3.googleusercontent.com/d/1A2Y_VqKS8D5yiybBWZHoBajX8ZDEWQjJ","https://lh3.googleusercontent.com/d/1H03O86_4mglSrPZMLLiLWxl-0bYHygVs","https://lh3.googleusercontent.com/d/1EEc6hsx5TKO4k0VswTv3PU1BkkS2Ft1t","https://lh3.googleusercontent.com/d/1OvrtAdkCS42wM-kmuFcU3wWXEg5VqgUM","https://lh3.googleusercontent.com/d/1H4Nc_ZcxG-zjc4dtB4E8Jggx3oQeSyws","https://lh3.googleusercontent.com/d/1TgTKs-_QTsHiWpOx_OzrtoCVkLRt32gZ","https://lh3.googleusercontent.com/d/1AQlH2M_jEpknCQF4Ja4Vw6E9otmyJ7Ii","https://lh3.googleusercontent.com/d/118YL68CJ2WpgCoz7APdLuo5keOjr7O_Y","https://lh3.googleusercontent.com/d/1ZpMfJYEq5yGghAikKAKaL7beXkORJsIY","https://lh3.googleusercontent.com/d/1RgrFUTE-JoICEnfFScjkKcGrdepCipTl","https://lh3.googleusercontent.com/d/1YxbUeB78K7kWKufaKIIlv1uTyP3Elqsi","https://lh3.googleusercontent.com/d/1u98btq3w24XNyMQwZ3cTq39nvZKo7N7E","https://lh3.googleusercontent.com/d/1SO4ZF1lZByUEBXTUie5qlN5r7hqPMpCJ","https://lh3.googleusercontent.com/d/1wfjtbNwbxYi7tl4MBJMDJX0EoTMZjqbh","https://lh3.googleusercontent.com/d/1A1Hn9_uzhfw5r5iF8Ik4oZdzxb_-yrFu","https://lh3.googleusercontent.com/d/1ul_f8H7tf9pwzg1yTElGBZDs05-lTJVg","https://lh3.googleusercontent.com/d/1seNHK1JGSFtNc_hlL6BWgDfpTIw96-L4","https://lh3.googleusercontent.com/d/1LRhFWev-00Em-CYxfWTtl2lGRPlx6kuP","https://lh3.googleusercontent.com/d/12cLPUqJazNpg7oiiOutMKXg7UXPKeLT5","https://lh3.googleusercontent.com/d/10lRYIvbEXfPgxJuX9-Ri7iw8bWH9LAPx","https://lh3.googleusercontent.com/d/1zUZElH9PEmBWiheLYExtNK2BOrS1lGCh","https://lh3.googleusercontent.com/d/1CIUovOkYMCi_0ws8BsKrVLS4qnwYeIPS","https://lh3.googleusercontent.com/d/11hynQG4XA-pt9RO-UfeuE8MQCCLGCJUP","https://lh3.googleusercontent.com/d/1pf2qj_5z01FlyGl72e3sSVreVHgcF005","https://lh3.googleusercontent.com/d/1f1xmI7gZcsGKBdGh6izq-42FG3_mLY46","https://lh3.googleusercontent.com/d/17KDMSAPdojM4Sx5E_IOhijkbPexITJZl","https://lh3.googleusercontent.com/d/1hhDFl_ZHrssW-6C9KrlDKhaxYUtb8q5F","https://lh3.googleusercontent.com/d/1DXwr1f9iy_m6Ar_14MglA6dX7vWOlVG9","https://lh3.googleusercontent.com/d/137BNrm0GeiS-dodgBHDBu2AseixyqvdR","https://lh3.googleusercontent.com/d/1cDrL0pnGnV1LjmzG3Ozvr1IJ8CZfG_ZU","https://lh3.googleusercontent.com/d/1DbesKaFLyIc-uTkO6cFxaFlXuvxNBXZv"
+    ];
+
+    const HP = [140,150,170,170,190,180,240,290,270,130,170,190,120,190,230,230,140,170,150,160,170,100,150,240,190,160,190,180,180,210,220,999,160,240,200,210,200,240,250,270,160,180,140,180,120,190,140,170,140,180,160,500,170,150,150,210,230,190,150,190,190,240,180,140,260,500,230,190,260,190,220,150,190,250,230,220,888,160,180,180,180,170,160,140,140,280,180,160,150,150,140,190,190,200,200,210,130,240,150,170,130,180];
+    const NRG1 = [2,2,2,2,3,1,3,4,2,3,1,2,2,4,2,2,2,2,3,2,1,1,2,2,3,2,1,1,2,2,3,8,2,3,2,1,2,2,2,3,2,2,2,2,3,2,1,3,2,1,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,8,2,2,2,2,2,2,2,2,4,2,2,2,2,3,2,2,2,2,2,3,2,2,3,2,2,2,2,2,2,2,2,2,3,2,2,2];
+    const NRG2 = [3,3,3,4,2,4,4,4,5,3,8,3,4,1,4,1,2,2,2,1,3,8,4,4,3,3,8,3,2,5,4,8,3,2,2,3,4,5,4,4,3,3,3,4,4,3,4,4,3,3,3,8,3,3,4,4,4,2,4,3,3,4,2,2,2,8,3,3,4,4,3,3,3,4,3,3,8,3,8,1,2,2,3,3,2,4,5,5,2,2,1,2,4,2,4,4,4,3,3,3,3,5];
+    const DMG1 = [0,0,0,0,0,0,50,80,0,50,0,0,0,80,0,0,0,0,50,30,0,0,0,0,50,0,0,0,40,0,50,200,0,20,0,0,0,0,0,50,0,20,0,0,50,0,0,60,0,0,40,100,0,40,0,0,0,0,0,20,0,0,30,20,30,200,20,0,0,0,40,40,0,20,80,0,0,0,0,60,40,0,0,0,0,50,0,0,70,0,0,0,30,40,0,0,10,0,50,30,50,0];
+    const DMG2 = [70,60,50,80,50,80,80,80,130,70,"KILL",60,90,0,80,0,20,60,30,0,70,300,100,100,70,50,"KILL",70,30,100,80,400,60,0,0,50,80,120,100,80,70,50,50,80,80,60,80,80,50,70,70,175,60,60,80,90,80,40,80,60,50,100,40,40,0,300,60,50,80,100,50,70,70,80,60,60,200,60,"KILL",0,0,40,70,70,60,80,0,0,0,40,0,40,90,40,80,80,80,60,60,50,60,0];
+    const TYPE1 = ["H","H","H","H","A","SS","A","A","BS","A","SS","H","BS","A","BS","H","H","H","A","A","A","SS","H","A","A","H","SS","SS","A","BS","A","A","BS","A","BS","SS","H","H","BS","A","H","A","H","BS","A","H","BS","A","H","A","A","A","BS","A","H","H","BS","H","BS","A","H","BS","A","A","A","A","A","H","H","BS","A","A","BS","A","A","H","H","BS","BS","A","A","H","H","BS","H","A","BS","H","A","H","H","H","A","A","H","BS","A","BS","A","A","H","H"];
+    const TYPE2 = ["A","A","A","A","H","A","A","A","A","A","A","A","A","SS","A","SS","A","A","A","SS","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","A","H","A","A","A","A","A","A","A","A","A","A","A","A","A","A","SS","BS","A","A","A","A","A","A","A","BS","A","SS","A","A","A","A","A","A","A","A","A","A","A"];
+    const HEAL = [60,20,40,30,40,,,,,,, 30,,,,,50,30,,,,,,,,20,,,,,,,,,,,40,40,,,30,,50,,50,,,,30,,,,,,,,,,,30,15,,,,,,,,,50,,,"FULL",30,,,"FULL",30,,,,,,,,50,"FULL",,,,,,50,"FULL",,,,,,,,80,,40,,,50,,,,,,,50,30];
+    const HEAL_PCT = [,,,,,,,,,,,,,,,150,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,180,,,200,,,,,,,,,,,,,,,,,,,110,,,,,,,,,,200,,,,,,,,,];
+    const BLOCK = [,,,,,,,,40,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,50,,,,,,,,,,,,,,];
+    const BLOCK_PCT = [,,,,,,,,,,,, 100,,100,,,,,,,,,,,,,,, 100,,, 100,,100,,50,,,, 50,,,,,80,,,100,,,,,, 100,,100,,,100,,,100,,,,100,,,25,100,,50,,,100,,,,,,,100,,100,,,,,];
+    const LASTS = [,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, 2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, 3,,,,, 3,, 2,,2,,,,,,,,,,,,,, 3,];
+    const WHOLE_TEAM = [16,43,58,65,77,85,95];
+    const DOUBLE_DMG = [25,34,35,87];
+    const FLIP1 = [17,22,71,84,99];
+    const FLIP2 = [47,53];
+
+    // ── STATE ──
+    let currentUser = null;
+    let currentUserData = null;
+    let selectedCards = [];
+    let currentMatchCode = "";
+    let matchListener = null;
+    let matchInterval = null;
+    let isSwapping = false;
+    let myCurrentActiveIndex = 0;
+    let selectedAbility = null;
+    let currentMyDeck = [];
+    let currentMyEnergy = 0;
+
+    // ── AUTH GUARD ──
+    onAuthStateChanged(auth, async user => {
+      if (!user) { window.location.href = 'login.html'; return; }
+      currentUser = user;
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        currentUserData = snap.data();
+        document.getElementById('displayName').innerText = currentUserData.firstName || 'Player';
+      }
+      loadBinder();
+    });
+
+    // ── LOGOUT ──
+    window.doLogout = async function() {
+      await signOut(auth);
+      window.location.href = 'login.html';
+    };
+
+    // ── SCREEN SWITCH ──
+    window.switchScreen = function(id) {
+      document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active-screen'));
+      document.getElementById(id).classList.add('active-screen');
+    };
+
+    // ── BINDER ──
+    async function loadBinder() {
+      const grid = document.getElementById('binderGrid');
+      grid.innerHTML = '<div style="color:white; padding:20px;">Loading...</div>';
+      const snap = await getDocs(collection(db, 'users', currentUser.uid, 'binder'));
+      const cards = [];
+      snap.forEach(d => cards.push({ id: d.id, ...d.data() }));
+      renderBinder(cards);
+    }
+
+    function renderBinder(cards) {
+      const grid = document.getElementById('binderGrid');
+      grid.innerHTML = cards.length ? '' : '<div style="color:white; padding:20px;">Binder Empty — Add some cards!</div>';
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<div class="checkmark">✓</div><img src="${CARD_LINKS[card.linkIndex - 1] || ''}">`;
+        div.onclick = () => toggleSelect(div, card);
+        grid.appendChild(div);
+      });
+    }
+
+    function toggleSelect(element, card) {
+      const i = card.linkIndex - 1;
+      card.HP = HP[i] || 100;
+      card.NRG1 = NRG1[i] || 2;
+      card.NRG2 = NRG2[i] || 3;
+      card.Damage1 = DMG1[i] || 0;
+      card.Damage2 = DMG2[i] || 0;
+      card.Type1 = TYPE1[i] || 'A';
+      card.Type2 = TYPE2[i] || 'A';
+      card.HealthBoost = HEAL[i] || 0;
+      card.HealthBoostPercent = HEAL_PCT[i] || 0;
+      card.Blockdmg = BLOCK[i] || 0;
+      card.BockPercent = BLOCK_PCT[i] || 0;
+      card.Lasts = LASTS[i] || 0;
+
+      if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        selectedCards = selectedCards.filter(c => c.linkIndex !== card.linkIndex);
+      } else if (selectedCards.length < 3) {
+        element.classList.add('selected');
+        selectedCards.push(card);
+      }
+      document.getElementById('playBtn').classList.toggle('play-ready', selectedCards.length === 3);
+    }
+
+    window.addCard = async function() {
+      const name = document.getElementById('nameIn').value.trim();
+      const ver = document.getElementById('verIn').value.trim();
+      if (!name || !ver) return alert('Enter a card name and version!');
+      // Find card in CARD_LINKS by name match — for now just alert success
+      // In production you'd have a cards lookup table in Firestore
+      alert('Card adding coming soon — need cards database setup!');
+    };
+
+    window.goToLobby = function() {
+      if (selectedCards.length === 3) switchScreen('screen-lobby');
+      else alert('Select 3 cards first!');
+    };
+
+    // ── MATCH ──
+    function buildBattleDeck(deck) {
+      return deck.map(card => ({
+        ...card,
+        currentHP: card.HP || 100,
+        maxHP: card.HP || 100,
+        isDead: false,
+        p1Used: 0, p2Used: 0,
+        ssUsed: false,
+        activeShield: 0, activeShieldPercent: 0, shieldTurnsRemaining: 0,
+        nextAttackBonus: 0, nextAttackPercentBonus: 0, boostedAttacksRemaining: 0
+      }));
+    }
+
+    window.generateCode = async function() {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      currentMatchCode = code;
+      document.getElementById('displayCode').innerText = code;
+
+      const matchData = {
+        host: currentUser.uid,
+        hostName: currentUserData?.firstName || 'Player',
+        hostDeck: buildBattleDeck(selectedCards),
+        hostActiveIdx: 0, hostEnergy: 2, hostSkipTurn: false,
+        guest: null, guestName: null, guestDeck: [], guestActiveIdx: 0, guestEnergy: 0, guestSkipTurn: false,
+        status: 'waiting', turn: 'host', winner: null,
+        announcement: '', hideAnnouncement: false,
+        coinFlipFailTimestamp: 0
+      };
+
+      await set(ref(rtdb, 'matches/' + code), matchData);
+      switchScreen('screen-waiting');
+
+      // Listen for guest to join
+      matchListener = onValue(ref(rtdb, 'matches/' + code + '/status'), snap => {
+        if (snap.val() === 'active') {
+          if (matchListener) { matchListener(); matchListener = null; }
+          switchScreen('screen-game');
+          document.getElementById('turnAnnounce').innerText = 'YOUR TURN';
+          startMatchPolling(code);
+        }
+      });
+    };
+
+    window.joinMatch = async function() {
+      const code = document.getElementById('matchInput').value.trim();
+      if (code.length !== 6) return alert('Enter a 6-digit code!');
+      currentMatchCode = code;
+
+      const matchSnap = await get(ref(rtdb, 'matches/' + code));
+      if (!matchSnap.exists()) return alert('Match not found!');
+      const match = matchSnap.val();
+      if (match.guest) return alert('Match is already full!');
+
+      await update(ref(rtdb, 'matches/' + code), {
+        guest: currentUser.uid,
+        guestName: currentUserData?.firstName || 'Player',
+        guestDeck: buildBattleDeck(selectedCards),
+        guestActiveIdx: 0, guestEnergy: 0, guestSkipTurn: false,
+        status: 'active'
+      });
+
+      switchScreen('screen-game');
+      document.getElementById('turnAnnounce').innerText = "OPPONENT'S TURN";
+      startMatchPolling(code);
+    };
+
+    window.cancelMatch = async function() {
+      if (matchListener) { matchListener(); matchListener = null; }
+      if (currentMatchCode) await set(ref(rtdb, 'matches/' + currentMatchCode), null);
+      switchScreen('screen-lobby');
+    };
+
+    // ── POLLING ──
+    function startMatchPolling(code) {
+      if (matchInterval) clearInterval(matchInterval);
+      matchInterval = setInterval(async () => {
+        const snap = await get(ref(rtdb, 'matches/' + code));
+        if (!snap.exists()) return;
+        const data = snap.val();
+
+        if (data.status === 'finished' && data.winner) {
+          clearInterval(matchInterval);
+          document.getElementById('winnerName').innerText = data.winner.toUpperCase() + ' WON!';
+          createConfetti();
+          switchScreen('screen-victory');
+          const myName = currentUserData?.firstName || 'Player';
+          if (data.winner === myName) {
+            const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+            if (userSnap.exists() && !userSnap.data().firstWin) {
+              await updateDoc(doc(db, 'users', currentUser.uid), { firstWin: true });
+              document.getElementById('firstWinMsg').style.display = 'block';
+            }
+          }
+          return;
+        }
+
+        const isHost = (data.host === currentUser.uid);
+        const isMyTurn = data.turn === (isHost ? 'host' : 'guest');
+        updateTurnUI(isMyTurn);
+
+        const banner = document.getElementById('turnAnnounce');
+        if (data.announcement && !data.hideAnnouncement) {
+          banner.innerText = data.announcement;
+          banner.parentElement.style.background = '#82b1ff';
+          if (isHost) {
+            setTimeout(async () => {
+              await update(ref(rtdb, 'matches/' + code), { hideAnnouncement: true });
+            }, 2000);
+          }
+        } else {
+          banner.innerText = isMyTurn ? 'YOUR TURN' : "OPPONENT'S TURN";
+          banner.parentElement.style.background = '#ff8a8a';
+        }
+
+        const myDeck = isHost ? data.hostDeck : data.guestDeck;
+        const theirDeck = isHost ? data.guestDeck : data.hostDeck;
+        const myActive = isHost ? data.hostActiveIdx : data.guestActiveIdx;
+        const theirActive = isHost ? data.guestActiveIdx : data.hostActiveIdx;
+        const myNRG = isHost ? data.hostEnergy : data.guestEnergy;
+        const oppNRG = isHost ? data.guestEnergy : data.hostEnergy;
+        renderBattlefield(myDeck, theirDeck, myActive, theirActive, myNRG, oppNRG);
+      }, 3000);
+    }
+
+    // ── BATTLEFIELD ──
+    function renderBattlefield(myDeck, theirDeck, myActiveIdx, theirActiveIdx, myNRG, theirNRG) {
+      currentMyDeck = myDeck;
+      currentMyEnergy = myNRG;
+      if (!isSwapping) myCurrentActiveIndex = myActiveIdx;
+
+      document.getElementById('myEnergy').innerText = myNRG + ' Energy';
+      document.getElementById('oppEnergy').innerText = theirNRG + ' Energy';
+
+      const drawSide = (containerId, deck, activeIdx, hpId, isMySide) => {
+        const holder = document.getElementById(containerId);
+        holder.innerHTML = '';
+        const hpDisplay = deck.map(c => c.isDead ? 0 : Math.floor(c.currentHP || 0)).join(' / ');
+        document.getElementById(hpId).innerText = hpDisplay + ' HP';
+        deck.forEach((card, i) => {
+          const div = document.createElement('div');
+          div.className = 'battle-card';
+          const shouldHighlight = isMySide && isSwapping ? (i === myCurrentActiveIndex) : (i === activeIdx);
+          if (shouldHighlight) div.classList.add('active-card');
+          if (card.isDead) { div.style.filter = 'grayscale(100%)'; div.style.opacity = '0.5'; div.style.pointerEvents = 'none'; }
+          div.innerHTML = `<img src="${CARD_LINKS[card.linkIndex - 1]}">`;
+          if (isMySide) div.onclick = () => onCardClick(div, i);
+          holder.appendChild(div);
+        });
+      };
+
+      drawSide('mySide', myDeck, myActiveIdx, 'myHP', true);
+      drawSide('opponentSide', theirDeck, theirActiveIdx, 'oppHP', false);
+    }
+
+    function updateTurnUI(isMyTurn) {
+      const btn = document.getElementById('actionBtn');
+      const menu = document.getElementById('actionMenu');
+      const tray = document.getElementById('mySide');
+      if (isMyTurn) {
+        btn.classList.remove('btn-disabled');
+        btn.innerText = 'Action';
+      } else {
+        btn.classList.add('btn-disabled');
+        btn.innerText = "Opponent's Turn";
+        menu.style.display = 'none';
+        btn.style.display = 'block';
+        tray.style.display = 'flex';
+      }
+    }
+
+    // ── ACTION MENU ──
+    window.toggleActionMenu = function() {
+      const btn = document.getElementById('actionBtn');
+      const menu = document.getElementById('actionMenu');
+      const tray = document.getElementById('mySide');
+      if (btn.classList.contains('btn-disabled')) return;
+      if (menu.style.display === 'none' || menu.style.display === '') {
+        const card = currentMyDeck[myCurrentActiveIndex];
+        document.getElementById('ability1Btn').innerText = `Ability 1 - ${card.NRG1 || 0} NRG`;
+        document.getElementById('ability2Btn').innerText = `Ability 2 - ${card.NRG2 || 0} NRG`;
+        [['ability1Btn', card.NRG1], ['ability2Btn', card.NRG2]].forEach(([id, cost]) => {
+          const b = document.getElementById(id);
+          if (currentMyEnergy < cost) { b.style.background = '#434343'; b.style.color = '#888'; b.style.pointerEvents = 'none'; }
+          else { b.style.background = '#ffc2feff'; b.style.color = '#595959'; b.style.pointerEvents = 'auto'; }
+        });
+        menu.style.display = 'flex';
+        btn.style.display = 'none';
+        tray.style.display = 'none';
+      } else {
+        menu.style.display = 'none';
+        btn.style.display = 'block';
+        tray.style.display = 'flex';
+      }
+    };
+
+    window.useAbility = function(num, event) {
+      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
+      event.currentTarget.style.backgroundColor = '#c2ffeeff';
+      selectedAbility = num;
+    };
+
+    window.skipTurn = function(event) {
+      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
+      event.currentTarget.style.backgroundColor = '#c2ffeeff';
+      selectedAbility = 'skip';
+    };
+
+    window.startSwap = function() {
+      isSwapping = true;
+      document.getElementById('actionMenu').style.display = 'none';
+      document.getElementById('mySide').style.display = 'flex';
+      document.getElementById('actionBtn').style.display = 'none';
+      document.getElementById('confirmSwapBtn').style.display = 'block';
+    };
+
+    window.onCardClick = function(element, index) {
+      if (!isSwapping) return;
+      if (currentMyDeck[index].isDead) return;
+      document.querySelectorAll('#mySide .battle-card').forEach(c => c.classList.remove('active-card'));
+      element.classList.add('active-card');
+      myCurrentActiveIndex = index;
+    };
+
+    window.finishSwap = async function() {
+      const btn = document.getElementById('confirmSwapBtn');
+      btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
+      await processTurn({ type: 'swap', target: myCurrentActiveIndex });
+      btn.style.pointerEvents = 'auto'; btn.style.opacity = '1';
+      isSwapping = false;
+      document.getElementById('confirmSwapBtn').style.display = 'none';
+      document.getElementById('actionBtn').style.display = 'block';
+      document.getElementById('mySide').style.display = 'flex';
+    };
+
+    window.confirmAndEndTurn = async function() {
+      const btn = document.getElementById('finalConfirmBtn');
+      btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
+      let actionData = {};
+      if (selectedAbility === 'skip') actionData = { type: 'skip' };
+      else if (selectedAbility === 1 || selectedAbility === 2) actionData = { type: 'ability', slot: selectedAbility };
+      else { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
+      await processTurn(actionData);
+      btn.style.pointerEvents = 'auto'; btn.style.opacity = '1';
+      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
+      selectedAbility = null;
+      isSwapping = false;
+      document.getElementById('actionMenu').style.display = 'none';
+      document.getElementById('actionBtn').style.display = 'block';
+      document.getElementById('mySide').style.display = 'flex';
+    };
+
+    // ── COMBAT ──
+    async function processTurn(actionData) {
+      const snap = await get(ref(rtdb, 'matches/' + currentMatchCode));
+      if (!snap.exists()) return;
+      let match = snap.val();
+
+      const isHost = match.host === currentUser.uid;
+      let myDeck = isHost ? [...match.hostDeck] : [...match.guestDeck];
+      let oppDeck = isHost ? [...match.guestDeck] : [...match.hostDeck];
+      let myIdx = isHost ? match.hostActiveIdx : match.guestActiveIdx;
+      let oppIdx = isHost ? match.guestActiveIdx : match.hostActiveIdx;
+      let myEnergy = isHost ? match.hostEnergy : match.guestEnergy;
+
+      let myCard = { ...myDeck[myIdx] };
+      let oppCard = { ...oppDeck[oppIdx] };
+      myDeck[myIdx] = myCard;
+      oppDeck[oppIdx] = oppCard;
+
+      match.announcement = '';
+      match.hideAnnouncement = false;
+
+      if (actionData.type === 'swap') {
+        if (myEnergy < 1) return;
+        if (myDeck[actionData.target].isDead) return;
+        myEnergy -= 1;
+        myIdx = actionData.target;
+        match.announcement = 'SWAP USED';
+
+      } else if (actionData.type === 'skip') {
+        match.announcement = 'TURN SKIPPED';
+
+      } else if (actionData.type === 'ability') {
+        const slot = actionData.slot;
+        const nrgCost = slot === 1 ? (myCard.NRG1 || 0) : (myCard.NRG2 || 0);
+        const baseDmg = slot === 1 ? myCard.Damage1 : myCard.Damage2;
+        const type = slot === 1 ? myCard.Type1 : myCard.Type2;
+        const scaling = 0;
+
+        if (myEnergy < nrgCost) return;
+        if (slot === 2 && myCard.linkIndex === 29 && myCard.p1Used === 0) return;
+        if (type === 'SS' && myCard.ssUsed) return;
+
+        myEnergy -= nrgCost;
+
+        let moveSuccess = true;
+        if (slot === 1 && FLIP1.includes(myCard.linkIndex)) { if (Math.random() < 0.5) { moveSuccess = false; match.coinFlipFailTimestamp = Date.now(); } }
+        if (slot === 2 && FLIP2.includes(myCard.linkIndex)) { if (Math.random() < 0.5) { moveSuccess = false; match.coinFlipFailTimestamp = Date.now(); } }
+
+        if (moveSuccess) {
+          if (myCard.linkIndex === 23 && slot === 1) {
+            myCard.currentHP += 100;
+            oppCard.currentHP += 10;
+          } else if (myCard.linkIndex === 24 && slot === 1) {
+            myDeck.forEach(c => { c.nextAttackPercentBonus = 100; c.boostedAttacksRemaining = 3; });
+          } else if (myCard.linkIndex === 102 && slot === 2) {
+            const tm = [1,2,3,4,5,10,11,12,13,14,17,18,19,20,21,22,25,29,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,58,60,61,63,64,72,78,79,80,81,82,83,84,87,88,89,90,91,92,97,99,100,101];
+            myDeck.forEach(c => { if (tm.includes(c.linkIndex)) { c.nextAttackPercentBonus = 100; c.boostedAttacksRemaining = 3; } });
+          } else {
+            if (myCard.Sacrifice1 === true && slot === 1) { myCard.currentHP = 0; myCard.isDead = true; }
+            if (slot === 2 && myCard.linkIndex === 79) { myCard.currentHP = 0; myCard.isDead = true; }
+
+            if (type === 'A' || type === 'SS') {
+              if (slot === 1 && myCard.linkIndex === 72) oppCard.currentHP = Math.floor(oppCard.currentHP * 0.5);
+
+              let dmg = 0;
+              if (baseDmg === 'KILL') {
+                dmg = 9999;
+              } else {
+                dmg = Number(baseDmg) || 0;
+                const timesUsed = slot === 1 ? myCard.p1Used : myCard.p2Used;
+                if (slot === 1 && myCard.linkIndex === 29) dmg += timesUsed * 10;
+                dmg += myCard.nextAttackBonus || 0;
+                if (myCard.nextAttackPercentBonus > 0) dmg = dmg * (1 + myCard.nextAttackPercentBonus / 100);
+                if (dmg > 0 && myCard.boostedAttacksRemaining > 0) {
+                  myCard.boostedAttacksRemaining--;
+                  if (myCard.boostedAttacksRemaining === 0) { myCard.nextAttackBonus = 0; myCard.nextAttackPercentBonus = 0; }
+                } else if (dmg > 0) { myCard.nextAttackBonus = 0; myCard.nextAttackPercentBonus = 0; }
+
+                let blockFlat = oppCard.activeShield || 0;
+                dmg -= blockFlat;
+                if (dmg < 0) dmg = 0;
+                if (oppCard.activeShieldPercent > 0) dmg = dmg * (1 - oppCard.activeShieldPercent / 100);
+              }
+
+              oppCard.currentHP -= Math.floor(dmg);
+              if (oppCard.currentHP <= 0) { oppCard.currentHP = 0; oppCard.isDead = true; }
+
+              if (oppCard.shieldTurnsRemaining > 0) {
+                oppCard.shieldTurnsRemaining--;
+                if (oppCard.shieldTurnsRemaining === 0) { oppCard.activeShield = 0; oppCard.activeShieldPercent = 0; }
+              } else { oppCard.activeShield = 0; oppCard.activeShieldPercent = 0; }
+            }
+
+            if (type === 'H') {
+              let healAmt = 0;
+              if (myCard.HealthBoost === 'FULL') healAmt = myCard.maxHP - myCard.currentHP;
+              else healAmt = Number(myCard.HealthBoost) || 0;
+              if (myCard.HealthBoostPercent > 0) healAmt += myCard.currentHP * (myCard.HealthBoostPercent / 100);
+              if (myCard.linkIndex === 88) {
+                const darshil = myDeck.find(c => c.name && c.name.toLowerCase().includes('darshil'));
+                if (darshil && !darshil.isDead) darshil.currentHP = darshil.maxHP;
+              }
+              if (WHOLE_TEAM.includes(myCard.linkIndex)) {
+                myDeck.forEach(c => { if (!c.isDead) c.currentHP += healAmt; });
+              } else {
+                myCard.currentHP += healAmt;
+              }
+            }
+
+            if (type === 'BS') {
+              myCard.activeShield = myCard.Blockdmg || 0;
+              myCard.activeShieldPercent = myCard.BockPercent || 0;
+              myCard.shieldTurnsRemaining = myCard.Lasts || 1;
+            }
+
+            if (type === 'SS') {
+              myCard.ssUsed = true;
+              if (isHost) match.guestSkipTurn = true;
+              else match.hostSkipTurn = true;
+            }
+
+            if (DOUBLE_DMG.includes(myCard.linkIndex) && (Number(baseDmg) || 0) === 0 && (type === 'A' || type === 'SS')) myCard.nextAttackPercentBonus = 100;
+            if (slot === 1 && myCard.linkIndex === 50 && (Number(baseDmg) || 0) === 0 && (type === 'A' || type === 'SS')) myCard.nextAttackPercentBonus = 50;
+            if (slot === 1 && myCard.linkIndex === 21 && (Number(baseDmg) || 0) === 0 && (type === 'A' || type === 'SS')) myCard.nextAttackBonus = 30;
+            if (myCard.OpponentHealthGain > 0) oppCard.currentHP += Number(myCard.OpponentHealthGain);
+          }
+        }
+
+        if (slot === 1) myCard.p1Used++; else myCard.p2Used++;
+        match.announcement = `ABILITY ${slot} USED`;
+      }
+
+      // Auto-swap dead cards
+      function nextAlive(deck, idx) {
+        for (let i = idx + 1; i < deck.length; i++) if (!deck[i].isDead) return i;
+        for (let i = 0; i < idx; i++) if (!deck[i].isDead) return i;
+        return idx;
+      }
+      if (myCard.isDead) myIdx = nextAlive(myDeck, myIdx);
+      if (oppCard.isDead) oppIdx = nextAlive(oppDeck, oppIdx);
+
+      // Check winner
+      const hostAllDead = (isHost ? myDeck : oppDeck).every(c => c.isDead);
+      const guestAllDead = (isHost ? oppDeck : myDeck).every(c => c.isDead);
+      if (hostAllDead) { match.winner = match.guestName; match.status = 'finished'; }
+      else if (guestAllDead) { match.winner = match.hostName; match.status = 'finished'; }
+
+      // End turn logic
+      let skipWas = false;
+      if (isHost && match.guestSkipTurn) {
+        match.guestSkipTurn = false; skipWas = true;
+        match.turn = 'host';
+        match.hostEnergy = Math.min(10, (match.hostEnergy || 0) + 2);
+        match.guestEnergy = Math.min(10, (match.guestEnergy || 0) + 2);
+        match.announcement = "OPP'S TURN SKIPPED";
+      } else if (!isHost && match.hostSkipTurn) {
+        match.hostSkipTurn = false; skipWas = true;
+        match.turn = 'guest';
+        match.guestEnergy = Math.min(10, (match.guestEnergy || 0) + 2);
+        match.hostEnergy = Math.min(10, (match.hostEnergy || 0) + 2);
+        match.announcement = "OPP'S TURN SKIPPED";
+      } else {
+        if (isHost) { match.guestEnergy = Math.min(10, (match.guestEnergy || 0) + 2); match.turn = 'guest'; }
+        else { match.hostEnergy = Math.min(10, (match.hostEnergy || 0) + 2); match.turn = 'host'; }
+      }
+
+      // Write back
+      if (isHost) {
+        match.hostDeck = myDeck; match.guestDeck = oppDeck;
+        match.hostActiveIdx = myIdx; match.guestActiveIdx = oppIdx;
+        match.hostEnergy = myEnergy;
+      } else {
+        match.guestDeck = myDeck; match.hostDeck = oppDeck;
+        match.guestActiveIdx = myIdx; match.hostActiveIdx = oppIdx;
+        match.guestEnergy = myEnergy;
+      }
+
+      await set(ref(rtdb, 'matches/' + currentMatchCode), match);
+    }
+
+    // ── CONFETTI ──
+    function createConfetti() {
+      const container = document.getElementById('confettiContainer');
+      container.innerHTML = '';
+      const colors = ['#ffd700','#4CAF50','#2196F3','#F44336','#FF9800','#9C27B0'];
+      for (let i = 0; i < 50; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random() * 100 + '%';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDelay = Math.random() * 3 + 's';
+        c.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        container.appendChild(c);
+      }
+    }
+
+  </script>
+</body>
+</html>
