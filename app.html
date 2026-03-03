@@ -27,6 +27,15 @@
     .card.selected .checkmark { display: block; }
 
     .input-bar { height: 12vh; display: flex; justify-content: center; align-items: center; gap: 15px; background: #eeeeee; }
+    .btn-scan { background: #ff80ab; color: white; padding: 14px 32px; border-radius: 20px; cursor: pointer; font-family: 'Righteous'; font-size: 22px; box-shadow: 0 5px 0 #c2185b; transition: all 0.15s; }
+    .btn-scan:active { transform: translateY(3px); box-shadow: 0 2px 0 #c2185b; }
+    #scanOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+    #scanOverlay.visible { display: flex; }
+    #scanOverlay h2 { color: white; font-size: 28px; margin: 0; }
+    #scanOverlay p { color: #aaa; font-size: 14px; margin: 0; text-align: center; }
+    .scan-btn { background: #ff80ab; color: white; padding: 16px 40px; border-radius: 20px; font-family: 'Righteous'; font-size: 22px; cursor: pointer; box-shadow: 0 5px 0 #c2185b; }
+    .scan-cancel { background: #555; color: white; padding: 12px 30px; border-radius: 16px; font-family: 'Righteous'; font-size: 16px; cursor: pointer; }
+    #scanStatus { color: #ff80ab; font-size: 18px; min-height: 28px; }
     .input-bar input { padding: 10px; border-radius: 12px; font-family: 'Righteous'; width: 140px; border: 2px solid #ddd; }
     .btn-add { background: #ff80ab; color: white; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-family: 'Righteous'; }
 
@@ -89,10 +98,17 @@
         <div id="binderGrid" class="card-list"></div>
       </div>
     </div>
+    <!-- SCAN OVERLAY -->
+    <div id="scanOverlay">
+      <h2>📷 Scan Your Card</h2>
+      <p>Take a clear photo of the card face</p>
+      <div id="scanStatus"></div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment">
+      <div class="scan-btn" onclick="document.getElementById('cameraInput').click()">Take Photo</div>
+      <div class="scan-cancel" onclick="closeScanner()">Cancel</div>
+    </div>
     <div class="input-bar">
-      <input type="text" id="nameIn" placeholder="Card Name">
-      <input type="text" id="verIn" placeholder="Version">
-      <button class="btn-add" onclick="addCard()">Add Card</button>
+      <div class="btn-scan" onclick="openScanner()">📷 SCAN CARD</div>
     </div>
     <div id="playBtn" class="play-footer" onclick="goToLobby()">PLAY</div>
   </div>
@@ -268,12 +284,93 @@
       document.getElementById('playBtn').classList.toggle('play-ready', selectedCards.length === 3);
     }
 
-    window.addCard = async function() {
-      const name = document.getElementById('nameIn').value.trim();
-      const ver = document.getElementById('verIn').value.trim();
-      if (!name || !ver) return alert('Enter a card name and version!');
-      alert('Card adding coming soon!');
+    const ANTHROPIC_KEY = 'YOUR_API_KEY_HERE';
+
+    const CARD_NAMES = ['Zionna','Liam','Rithvik','Ziti','Tada','Mr. Wagner','Forest','Miss Daisy','FortissiMOE','Atharva','Max','Aqib','Alan','Landon','Friarbot','Mr. Barnes','Trent','Pee Paw','Sean','Daniel','Kyle','Lee-um','Wilbur','Mrs. Carrie','Drive Team','Robbie','Abishek','Chaotic Duo','Noah','Mr. Scott','Mr. Smith','Brainrot Mr. Smith','Kyle Louis','Mrs. Scott','Ms. Aurilio','Mr. Hessler','Mr. Louis','Neon','Overture','Poseidon','Abhi Reddy','Sanchita','Dan','Rahul','Jules','Coco','Erick Lin','Krithik','Amogh','Yasha','Ruth','Ruth','Jeongwoo','Jacob','Jeremy','Mr. Knauss','Mjolnir','Jacob Leff','Mr. Knauss','Ryan','Halle','Jimmy Jackson','Kris','Ojas','Trinity','Mars (mascot)','Atlas','Kevin Meyer','S.S. Ironman','Cruz & Coy','Perry','Jon Bunn','Kevin','Leviathan','Mr. Krinkle','Theseus','Archimedes','Jonathan','Venus','Mars','Soap','Luna Lopez','Ben','JJ','Lumi','The Black Pearl','Darshil','Dheer','Liam Bruhin','Eric Lee','Soumil','Kevin','Mr. Lubener','Marlin','Jeff Deibel','Valkyrie','Kendyl','EveryGuac','Hawk','Max','Heru','Woodie Flowers'];
+    const CARD_ABILITY1 = ['BTA','Garlic Aioli Drizzle','President Shield','Medical Knowledge','Summon The Baby','Error 404','Bensalem A1 Captain','Flower Power','MOE Cheer','Athu Attack','Deny Deny Deny','Snack Pack','Cheesy Shield','CAD','Plexi shield','Woodie Flowers Winner','Drive The Robot','Chair Break','Big Back Bomb','Camera flash','Adobe Crashout','Confused','Selfie','OINK OINK!','L-O-V-E WE LOVE OUR DRIVE TEAM','Belt Of Truth','Clear the field','Captain of Safety','Rage Bait','Protector of Red Watch','Master Sketch','Alpha Aura Gaze','Dinner Time','Move Deleter','Print and Pivot','Paint the Town','Safety Check','Cone Regeneration','Swerve Drive Away','Scaredy Pants','Reels Heal','Strategic Synchronizer','Motivational Speech','Shelf Shuffle','Chappell Roan','Caffeine','Debugger','Logic Lock','French Toast Casserole',"Driver's Practice",'3d Print','3d Print','Pulling a John','Virus Input','Pew Pew','Obnoxious Dad Jokes','Indestructible Intake','No One Leff Behind','Hurty Gurdy','Pica','Autism Headphones','BALD IS BOLD','Safety Shield','Crashout','Autotomize','Godly Smite','The Wheel Sucker','What Went Wrong','Shallow Hang','Nerd Shield','Shoot Note','Broken Intake','Darling Morghulis','Tipsy Robot','You got jumped','Weight Loss Journey','Motivational Screech','Taco Shield','Verminous Communion','Confetti!!!','Suds','Funny Joke','Goldfish','Random Humor','Cuteness','Perfect','Greaseball','Brotherly Love','Among Us','Vans Mode','Gigachad','Hello','Naturally talented','Spin Move',"Timmy's",'Defender','Safety glasses','Peel-Off','Writing','FLASHBANG','Suction Cup','Gracious Professionalism'];
+    const CARD_ABILITY2 = ['Clattering Cup','BUST A LEFT BUST A RIGHT','Rithvik Punch','Hyper fixation Ramble','Might Of The Corney','Deadpan','Power of Friendship','Ground intake','Barrage Notes','Sensei Athu Slash','Coup','Two-Man','Pepperoni Barrage','Flag','3 piece auto','Joke','Tower Over','Bracket Throw','Bulletstorm','Interview','Canva Rage','Abracadabra','Dance Battle','Stealth Strike','Algaefy','Power tool noises','Deep Stare','Locked in VS geeked','Gaslight','Attack','MetalSmith','Aura Note','Bite','Shielding from Field Time Paralysis','Code Overload','Raining Stars','Safety Corral','Cube Crusher','Score Notes','Tactical Trident','Social Media Cancel','Code Overload','CAD Skills','Bus Drive Swerve','Quick CAD','The Buzzer','Typical Software','Trojan Horse','CAD Attack','Tsunami Tackle','Green Hulk','Green Hulk','Friend or Foe','Sabotage','Every man for Themselves','K-Bear Claw','Hammer of Lightning','Hello Hello Hello','K-Bear Stare','Monkey Mode','Adobe Premiere Subscription','Automatic Fail','Monkey hop','West London','Coral Assist','Minion Swarm','Cone Clapper','Table Burn','Coral Cascade','Intelligence Overlead','Hang','Sprocket','Grease Licker!','Falling Robot','Blunt Fall','Psychological Damage','Divebomb','Nacho Libre',"Ellen hutter's last stand",'Ray of Sunshine','Bearing Breaker','Yapper','Aura','Crash Out','Gayness','Deep Cage Shockwave','Thousand Yard Stare',"I Don't Care",'Rizz','Cringelord','Wire Wrangler','Goodbye','Sudden swing','Quick Cycle','Chatting it up','Slasher','Ketchup hunt','Unlimited Cycles','Arson','BANANA GUN','Potato Smasher','Empowering Mentor'];
+
+    function findCardIndex(name, ability1, ability2) {
+      name = (name||'').toLowerCase().trim();
+      ability1 = (ability1||'').toLowerCase().trim();
+      ability2 = (ability2||'').toLowerCase().trim();
+      let bestMatch = -1, bestScore = 0;
+      for (let i = 0; i < CARD_NAMES.length; i++) {
+        let score = 0;
+        const cn = CARD_NAMES[i].toLowerCase();
+        const ca1 = CARD_ABILITY1[i].toLowerCase();
+        const ca2 = CARD_ABILITY2[i].toLowerCase();
+        if (name && cn === name) score += 10;
+        else if (name && cn.includes(name)) score += 5;
+        else if (name && name.includes(cn)) score += 4;
+        if (ability1 && ca1 === ability1) score += 6;
+        else if (ability1 && ca1.includes(ability1)) score += 3;
+        if (ability2 && ca2 === ability2) score += 6;
+        else if (ability2 && ca2.includes(ability2)) score += 3;
+        if (score > bestScore) { bestScore = score; bestMatch = i; }
+      }
+      return bestScore >= 4 ? bestMatch + 1 : -1;
+    }
+
+    window.openScanner = function() {
+      document.getElementById('scanOverlay').classList.add('visible');
+      document.getElementById('scanStatus').innerText = '';
     };
+    window.closeScanner = function() {
+      document.getElementById('scanOverlay').classList.remove('visible');
+      document.getElementById('cameraInput').value = '';
+    };
+
+    document.getElementById('cameraInput').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('scanStatus');
+      status.innerText = '🔍 Scanning card...';
+      try {
+        const base64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result.split(',')[1]);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 200,
+            messages: [{ role: 'user', content: [
+              { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
+              { type: 'text', text: 'This is an FRC TCG trading card. Read it and return ONLY a JSON object with these exact fields: {"name": "the name shown top-left on the card", "ability1": "the name of the first ability", "ability2": "the name of the second ability"}. Return ONLY valid JSON, no other text whatsoever.' }
+            ]}]
+          })
+        });
+        const data = await response.json();
+        const text = data.content?.[0]?.text || '';
+        let parsed;
+        try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); }
+        catch { status.innerText = '❌ Could not read card. Try a clearer photo!'; return; }
+        const linkIndex = findCardIndex(parsed.name, parsed.ability1, parsed.ability2);
+        if (linkIndex === -1) { status.innerText = '❌ Not recognized: ' + (parsed.name || '?') + ' / ' + (parsed.ability1 || '?'); return; }
+        const existing = await getDocs(collection(db, 'users', currentUser.username, 'binder'));
+        let duplicate = false;
+        existing.forEach(d => { if (d.data().linkIndex === linkIndex) duplicate = true; });
+        if (duplicate) { status.innerText = '⚠️ You already have ' + CARD_NAMES[linkIndex-1] + '!'; return; }
+        await setDoc(doc(db, 'users', currentUser.username, 'binder', linkIndex.toString()), {
+          name: CARD_NAMES[linkIndex - 1], linkIndex, addedAt: new Date().toISOString()
+        });
+        status.innerText = '✅ Added ' + CARD_NAMES[linkIndex-1] + '!';
+        setTimeout(() => { closeScanner(); loadBinder(); }, 1200);
+      } catch(err) {
+        console.error(err);
+        status.innerText = '❌ Error scanning. Check connection!';
+      }
+    });
 
     window.goToLobby = function() {
       if (selectedCards.length === 3) switchScreen('screen-lobby');
