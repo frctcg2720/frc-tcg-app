@@ -110,7 +110,9 @@
 
     .action-menu { background: #ff85e1; padding: 10px; border-radius: 20px; width: 90%; max-width: 650px; margin: 0 auto; display: none; gap: 10px; }
     .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 4; }
-    .menu-btn { background: #ffc2feff; border-radius: 12px; padding: 12px; font-family: 'Righteous'; color: #595959; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.1); cursor: pointer; text-align: center; }
+    .menu-btn { background: #ffc2feff; border-radius: 12px; padding: 12px; font-family: 'Righteous'; color: #595959; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.1); cursor: pointer; text-align: center; transition: all 0.15s; }
+    .menu-btn.lit { background: #ff80ab !important; color: white !important; box-shadow: 0 3px 0 #c2185b !important; transform: scale(1.04); }
+    body.dark .menu-btn.lit { background: #884747 !important; color: white !important; box-shadow: 0 3px 0 #5a2a2a !important; }
     .swap-box { background: #ffc2feff; border-radius: 12px; padding: 10px; text-align: center; font-size: 12px; color: #595959; grid-column: span 2; display: flex; flex-direction: column; justify-content: center; cursor: pointer; }
     .check-confirm { background: #ff6b6b; flex: 1; border-radius: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 30px; box-shadow: 0 3px 0 #d64545; }
 
@@ -132,7 +134,7 @@
     body.dark .turn-banner { background: #884747 !important; }
     body.dark .action-button { background: #6b396a !important; box-shadow: 0 4px 0 #3d1f3c !important; }
     body.dark .action-menu { background: #6b396a !important; }
-    body.dark .menu-btn { background: #3d3d3d !important; color: #ddd !important; }
+    body.dark .menu-btn { background: #3d3d3d !important; color: #ddd !important; transition: all 0.15s; }
     body.dark .check-confirm { background: #884747 !important; box-shadow: 0 3px 0 #5a2a2a !important; }
     body.dark .btn-confirm-swap { background: #884747 !important; box-shadow: 0 4px 0 #5a2a2a !important; }
     body.dark .lobby-title { color: white; }
@@ -718,12 +720,14 @@
     };
 
     window.useAbility = function(num, event) {
-      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
-      event.currentTarget.style.backgroundColor = '#c2ffeeff'; selectedAbility = num;
+      document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
+      event.currentTarget.classList.add('lit');
+      selectedAbility = num;
     };
     window.skipTurn = function(event) {
-      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
-      event.currentTarget.style.backgroundColor = '#c2ffeeff'; selectedAbility = 'skip';
+      document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
+      event.currentTarget.classList.add('lit');
+      selectedAbility = 'skip';
     };
     window.startSwap = function() {
       isSwapping = true; document.getElementById('actionMenu').style.display = 'none';
@@ -750,7 +754,7 @@
       else { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
       await processTurn(actionData);
       btn.style.pointerEvents = 'auto'; btn.style.opacity = '1';
-      document.querySelectorAll('.menu-btn').forEach(b => b.style.backgroundColor = '');
+      document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
       selectedAbility = null; isSwapping = false;
       document.getElementById('actionMenu').style.display = 'none'; document.getElementById('actionBtn').style.display = 'block'; document.getElementById('mySide').style.display = 'flex';
     };
