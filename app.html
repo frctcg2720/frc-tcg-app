@@ -15,10 +15,37 @@
     /* BINDER */
     .header { height: 15vh; display: flex; justify-content: center; align-items: center; padding: 5px; position: relative; }
     .header h1 { font-size: 60px; color: #ff8a80; margin: 0; }
-    .logout-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: #ddd; color: #666; font-family: 'Righteous'; font-size: 13px; padding: 8px 16px; border-radius: 12px; cursor: pointer; }
+    /* PROFILE */
+    .profile-wrap { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 10px; }
+    .profile-circle { width: 44px; height: 44px; border-radius: 50%; background: #ff80ab; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: relative; flex-shrink: 0; }
+    .profile-dropdown { position: absolute; top: 54px; right: 0; background: white; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden; display: none; min-width: 200px; z-index: 200; }
+    .profile-dropdown.open { display: block; }
+    .profile-dropdown a { display: block; padding: 14px 20px; font-family: 'Righteous'; font-size: 15px; color: #333; cursor: pointer; transition: background 0.15s; }
+    .profile-dropdown a:hover { background: #f5f5f5; }
+    .profile-dropdown a.danger { color: #ff4444; }
 
-    .binder-tray { background: #82b1ff; border: 10px solid #448aff; margin: 0 auto; width: 90%; max-width: 860px; flex-grow: 1; display: flex; flex-direction: column; position: relative; border-radius: 40px; overflow: hidden; }
-    .scroll-container { width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; display: flex; align-items: flex-start; padding: 20px 30px 25px 30px; }
+    /* DARK MODE TOGGLE */
+    .dark-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .toggle-track { width: 44px; height: 24px; background: #ddd; border-radius: 12px; position: relative; transition: background 0.3s; flex-shrink: 0; }
+    .toggle-thumb { width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    body.dark .toggle-track { background: #448aff; }
+    body.dark .toggle-thumb { left: 22px; }
+
+    /* DARK MODE STYLES */
+    body.dark { background: #1a1a2e; }
+    body.dark .binder-tray { background: #16213e; border-color: #0f3460; }
+    body.dark .scroll-container { background: #16213e; }
+    body.dark .header h1 { color: #ff8a80; }
+    body.dark .input-bar { background: #1a1a2e; }
+    body.dark .play-footer { background: #2d2d2d; }
+    body.dark .play-ready { background: #ff6b6b; }
+    body.dark .profile-dropdown { background: #2d2d44; }
+    body.dark .profile-dropdown a { color: #eee; }
+    body.dark .profile-dropdown a:hover { background: #3d3d5c; }
+    body.dark #scanOverlay { background: rgba(0,0,0,0.95); }
+
+    .binder-tray { background: #82b1ff; border: 10px solid #448aff; margin: 0 auto; width: 90%; max-width: 860px; display: flex; flex-direction: column; position: relative; border-radius: 40px; overflow: hidden; }
+    .scroll-container { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; align-items: flex-start; padding: 20px 30px 25px 30px; }
     .card-list { display: flex; gap: 20px; align-items: center; }
 
     .card { width: 200px; aspect-ratio: 2 / 3; background: #f5f5f5; border-radius: 20px; position: relative; cursor: pointer; flex-shrink: 0; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
@@ -91,7 +118,18 @@
   <div id="screen-binder" class="game-screen active-screen">
     <div class="header">
       <h1>FRC TCG</h1>
-      <div class="logout-btn" onclick="doLogout()">LOGOUT</div>
+      <div class="profile-wrap">
+      <div class="dark-toggle" onclick="toggleDark()" title="Dark mode">
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </div>
+      <div class="profile-circle" onclick="toggleDropdown()">
+        👤
+        <div class="profile-dropdown" id="profileDropdown">
+          <a onclick="showStats()">📊 Stats &amp; Leaderboard</a>
+          <a class="danger" onclick="doLogout()">🚪 Log Out</a>
+        </div>
+      </div>
+    </div>
     </div>
     <div class="binder-tray">
       <div class="scroll-container">
@@ -100,7 +138,7 @@
     </div>
     <!-- SCAN OVERLAY -->
     <div id="scanOverlay">
-      <h2>📷 Scan Your Card</h2>
+      <h2>Scan Your Card</h2>
       <p>Take a clear photo of the card face</p>
       <div id="scanStatus"></div>
       <input type="file" id="cameraInput" accept="image/*" capture="environment">
@@ -108,7 +146,7 @@
       <div class="scan-cancel" onclick="closeScanner()">Cancel</div>
     </div>
     <div class="input-bar">
-      <div class="btn-scan" onclick="openScanner()">📷 SCAN CARD</div>
+      <div class="btn-scan" onclick="openScanner()">SCAN CARD</div>
     </div>
     <div id="playBtn" class="play-footer" onclick="goToLobby()">PLAY</div>
   </div>
@@ -233,6 +271,28 @@
     loadBinder();
 
     // ── LOGOUT ──
+    window.toggleDark = function() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+    };
+    // Restore dark mode preference
+    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+
+    window.toggleDropdown = function() {
+      document.getElementById('profileDropdown').classList.toggle('open');
+    };
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.profile-circle')) {
+        document.getElementById('profileDropdown').classList.remove('open');
+      }
+    });
+
+    window.showStats = function() {
+      document.getElementById('profileDropdown').classList.remove('open');
+      alert('Stats & Leaderboard coming soon!');
+    };
+
     window.doLogout = function() {
       sessionStorage.removeItem('frctcg_user');
       window.location.href = 'login.html';
