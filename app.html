@@ -284,7 +284,13 @@
       document.getElementById('playBtn').classList.toggle('play-ready', selectedCards.length === 3);
     }
 
-    const ANTHROPIC_KEY = 'YOUR_API_KEY_HERE';
+    let ANTHROPIC_KEY = null;
+    async function getAnthropicKey() {
+      if (ANTHROPIC_KEY) return ANTHROPIC_KEY;
+      const snap = await getDoc(doc(db, 'config', 'anthropic'));
+      ANTHROPIC_KEY = snap.data().key;
+      return ANTHROPIC_KEY;
+    }
 
     const CARD_NAMES = ['Zionna','Liam','Rithvik','Ziti','Tada','Mr. Wagner','Forest','Miss Daisy','FortissiMOE','Atharva','Max','Aqib','Alan','Landon','Friarbot','Mr. Barnes','Trent','Pee Paw','Sean','Daniel','Kyle','Lee-um','Wilbur','Mrs. Carrie','Drive Team','Robbie','Abishek','Chaotic Duo','Noah','Mr. Scott','Mr. Smith','Brainrot Mr. Smith','Kyle Louis','Mrs. Scott','Ms. Aurilio','Mr. Hessler','Mr. Louis','Neon','Overture','Poseidon','Abhi Reddy','Sanchita','Dan','Rahul','Jules','Coco','Erick Lin','Krithik','Amogh','Yasha','Ruth','Ruth','Jeongwoo','Jacob','Jeremy','Mr. Knauss','Mjolnir','Jacob Leff','Mr. Knauss','Ryan','Halle','Jimmy Jackson','Kris','Ojas','Trinity','Mars (mascot)','Atlas','Kevin Meyer','S.S. Ironman','Cruz & Coy','Perry','Jon Bunn','Kevin','Leviathan','Mr. Krinkle','Theseus','Archimedes','Jonathan','Venus','Mars','Soap','Luna Lopez','Ben','JJ','Lumi','The Black Pearl','Darshil','Dheer','Liam Bruhin','Eric Lee','Soumil','Kevin','Mr. Lubener','Marlin','Jeff Deibel','Valkyrie','Kendyl','EveryGuac','Hawk','Max','Heru','Woodie Flowers'];
     const CARD_ABILITY1 = ['BTA','Garlic Aioli Drizzle','President Shield','Medical Knowledge','Summon The Baby','Error 404','Bensalem A1 Captain','Flower Power','MOE Cheer','Athu Attack','Deny Deny Deny','Snack Pack','Cheesy Shield','CAD','Plexi shield','Woodie Flowers Winner','Drive The Robot','Chair Break','Big Back Bomb','Camera flash','Adobe Crashout','Confused','Selfie','OINK OINK!','L-O-V-E WE LOVE OUR DRIVE TEAM','Belt Of Truth','Clear the field','Captain of Safety','Rage Bait','Protector of Red Watch','Master Sketch','Alpha Aura Gaze','Dinner Time','Move Deleter','Print and Pivot','Paint the Town','Safety Check','Cone Regeneration','Swerve Drive Away','Scaredy Pants','Reels Heal','Strategic Synchronizer','Motivational Speech','Shelf Shuffle','Chappell Roan','Caffeine','Debugger','Logic Lock','French Toast Casserole',"Driver's Practice",'3d Print','3d Print','Pulling a John','Virus Input','Pew Pew','Obnoxious Dad Jokes','Indestructible Intake','No One Leff Behind','Hurty Gurdy','Pica','Autism Headphones','BALD IS BOLD','Safety Shield','Crashout','Autotomize','Godly Smite','The Wheel Sucker','What Went Wrong','Shallow Hang','Nerd Shield','Shoot Note','Broken Intake','Darling Morghulis','Tipsy Robot','You got jumped','Weight Loss Journey','Motivational Screech','Taco Shield','Verminous Communion','Confetti!!!','Suds','Funny Joke','Goldfish','Random Humor','Cuteness','Perfect','Greaseball','Brotherly Love','Among Us','Vans Mode','Gigachad','Hello','Naturally talented','Spin Move',"Timmy's",'Defender','Safety glasses','Peel-Off','Writing','FLASHBANG','Suction Cup','Gracious Professionalism'];
@@ -337,7 +343,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_KEY,
+            'x-api-key': await getAnthropicKey(),
             'anthropic-version': '2023-06-01',
             'anthropic-dangerous-direct-browser-access': 'true'
           },
