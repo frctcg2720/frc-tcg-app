@@ -116,6 +116,46 @@
 
     .btn-confirm-swap { background: #ff6b6b; color: white; width: 90%; max-width: 650px; padding: 15px; border-radius: 20px; font-family: 'Righteous'; font-size: 30px; margin: 10px auto; cursor: pointer; box-shadow: 0 4px 0 #d64545; display: none; text-align: center; }
 
+    /* LOBBY DARK */
+    body.dark #screen-lobby { background: #884747 !important; }
+    body.dark .lobby-box { background: #2d2d2d; }
+    body.dark .lobby-box h2 { color: #eee; }
+    body.dark .lobby-box p { color: #aaa; }
+    body.dark .lobby-box input { background: #3d3d3d; color: white; border-color: #555; }
+    body.dark .btn-lobby { background: #6b396a !important; }
+    body.dark .btn-lobby.blue { background: #2a5298 !important; }
+    body.dark #screen-waiting { background: #2a3a5c !important; }
+    body.dark #screen-victory { background: #884747 !important; }
+    body.dark #screen-game { background: #1a1a1a !important; }
+    body.dark .card-holder { background: #2d3748 !important; border-color: #4a5568 !important; }
+    body.dark .stats-bar { color: #ddd; }
+    body.dark .turn-banner { background: #884747 !important; }
+    body.dark .action-button { background: #6b396a !important; box-shadow: 0 4px 0 #3d1f3c !important; }
+    body.dark .action-menu { background: #6b396a !important; }
+    body.dark .menu-btn { background: #3d3d3d !important; color: #ddd !important; }
+    body.dark .check-confirm { background: #884747 !important; box-shadow: 0 3px 0 #5a2a2a !important; }
+    body.dark .btn-confirm-swap { background: #884747 !important; box-shadow: 0 4px 0 #5a2a2a !important; }
+    body.dark .lobby-title { color: white; }
+
+    /* HOW TO PLAY */
+    .htp-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 8000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .htp-overlay.open { display: flex; }
+    .htp-box { background: white; border-radius: 28px; padding: 30px 28px; max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; position: relative; }
+    .htp-box h2 { font-size: 28px; color: #ff8a80; margin: 0 0 16px; text-align: center; }
+    .htp-section { margin-bottom: 18px; }
+    .htp-section h3 { font-size: 16px; color: #ff80ab; margin: 0 0 8px; font-family: Righteous; }
+    .htp-section p, .htp-section li { font-size: 14px; color: #444; line-height: 1.6; font-family: sans-serif; }
+    .htp-section ul { padding-left: 18px; margin: 4px 0; }
+    .htp-close { position: absolute; top: 16px; right: 18px; font-size: 24px; cursor: pointer; color: #999; font-family: Righteous; }
+    .htp-energy { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .htp-pip { padding: 4px 10px; border-radius: 20px; font-size: 12px; color: white; font-family: Righteous; }
+    .btn-htp { background: none; border: 2px solid #ff8a80; color: #ff8a80; font-family: Righteous; font-size: 14px; padding: 8px 18px; border-radius: 14px; cursor: pointer; margin-top: 4px; }
+    body.dark .htp-box { background: #2d2d2d; }
+    body.dark .htp-box h2 { color: #884747; }
+    body.dark .htp-section h3 { color: #6b396a; }
+    body.dark .htp-section p, body.dark .htp-section li { color: #ccc; }
+    body.dark .btn-htp { border-color: #884747; color: #884747; }
+
     /* VICTORY */
     #screen-victory { background: #ff8a8a; align-items: center; justify-content: center; position: relative; overflow: hidden; }
     .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s linear infinite; }
@@ -165,17 +205,77 @@
     <div id="playBtn" class="play-footer" onclick="goToLobby()">PLAY</div>
   </div>
 
+  <!-- HOW TO PLAY OVERLAY -->
+  <div class="htp-overlay" id="htpOverlay">
+    <div class="htp-box">
+      <div class="htp-close" onclick="closeHtp()">✕</div>
+      <h2>How To Play</h2>
+      <div class="htp-section">
+        <h3>Game Setup</h3>
+        <ul>
+          <li>Each player picks 3 cards for their deck</li>
+          <li>Place them face-up in front of you</li>
+          <li>Your first card is your <strong>active card</strong> — it attacks and gets targeted</li>
+          <li>The other two are <strong>benched</strong></li>
+        </ul>
+      </div>
+      <div class="htp-section">
+        <h3>How to Win</h3>
+        <p>Knock out all of your opponent's cards!</p>
+      </div>
+      <div class="htp-section">
+        <h3>Turn Sequence</h3>
+        <ul>
+          <li>Gain 2 energy at the start of your turn</li>
+          <li>Use energy to activate an ability, swap your active card, or skip</li>
+          <li>Max 10 energy at any time</li>
+        </ul>
+      </div>
+      <div class="htp-section">
+        <h3>Ability Types</h3>
+        <ul>
+          <li><strong>Attack</strong> — deals damage to opponent</li>
+          <li><strong>Heal</strong> — restores your card's HP (can exceed max!)</li>
+          <li><strong>Blocking Shield</strong> — blocks damage from the next attack</li>
+          <li><strong>Skipping Shield</strong> — skips the opponent's next turn (once per card)</li>
+        </ul>
+      </div>
+      <div class="htp-section">
+        <h3>Energy Costs by Color</h3>
+        <div class="htp-energy">
+          <span class="htp-pip" style="background:#9c27b0;">Purple — 1</span>
+          <span class="htp-pip" style="background:#2196f3;">Blue — 2</span>
+          <span class="htp-pip" style="background:#4caf50;">Green — 3</span>
+          <span class="htp-pip" style="background:#ffb74d; color:#333;">Lt. Orange — 4</span>
+          <span class="htp-pip" style="background:#ff9800;">Orange — 5</span>
+          <span class="htp-pip" style="background:#f44336;">Red — 8</span>
+        </div>
+      </div>
+      <div class="htp-section">
+        <h3>Extra Rules</h3>
+        <ul>
+          <li>When HP = 0, the card is dead — replace it with the next card to the right</li>
+          <li>Skipping Shields can only be used once per card</li>
+          <li>While your turn is skipped, you still gain 2 energy</li>
+          <li>HP can exceed the card's base HP through healing</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- LOBBY -->
   <div id="screen-lobby" class="game-screen">
     <h1 class="lobby-title">PLAY</h1>
     <div class="lobby-box">
-      <h2>Hey, <span id="displayName">Player</span>!</h2>
+      <h2 style="font-size:36px;">Hey, <span id="displayName">Player</span>!</h2>
       <br>
       <h2>Vs A Friend</h2>
-      <button class="btn-lobby" style="width:100%;" onclick="generateCode()">Generate Match Code</button>
+      <button class="btn-lobby" style="width:100%; background:#ff80ab;" onclick="generateCode()">Generate Match Code</button>
       <p style="margin:10px 0;">OR</p>
       <input type="text" id="matchInput" placeholder="Enter Code" style="width:100%; text-align:center; margin-bottom:10px;">
-      <button class="btn-lobby" style="width:100%; background:#448aff;" onclick="joinMatch()">Join Match</button>
+      <button class="btn-lobby blue" style="width:100%; background:#448aff;" onclick="joinMatch()">Join Match</button>
+      <br><br>
+      <button class="btn-htp" onclick="openHtp()">How To Play</button>
       <br><br>
       <button onclick="switchScreen('screen-binder')" style="background:none; color:#888; text-decoration:underline; cursor:pointer; font-family:Righteous; font-size:14px;">Back to Binder</button>
     </div>
@@ -285,12 +385,27 @@
     loadBinder();
 
     // ── LOGOUT ──
-    window.toggleDark = function() {
+    window.toggleDark = async function() {
       document.body.classList.toggle('dark');
-      localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+      const isDark = document.body.classList.contains('dark');
+      localStorage.setItem('darkMode', isDark);
+      // Save to Firestore so it persists across devices
+      try {
+        await updateDoc(doc(db, 'users', currentUser.username), { darkMode: isDark });
+      } catch(e) {}
     };
-    // Restore dark mode preference
-    if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+    // Restore dark mode - check Firestore first, fallback to localStorage
+    async function restoreDarkMode() {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.username));
+        if (snap.exists() && snap.data().darkMode === true) {
+          document.body.classList.add('dark');
+          return;
+        }
+      } catch(e) {}
+      if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+    }
+    restoreDarkMode();
 
     window.toggleDropdown = function(e) {
       e && e.stopPropagation();
@@ -307,6 +422,9 @@
         document.getElementById('profileDropdown').classList.remove('open');
       }
     });
+
+    window.openHtp = function() { document.getElementById('htpOverlay').classList.add('open'); };
+    window.closeHtp = function() { document.getElementById('htpOverlay').classList.remove('open'); };
 
     window.showStats = function() {
       document.getElementById('profileDropdown').classList.remove('open');
