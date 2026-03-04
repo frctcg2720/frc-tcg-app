@@ -10,6 +10,7 @@
     body { font-family: 'Righteous', sans-serif; background: #eeeeee; margin: 0; height: 100vh; width: 100vw; overflow: hidden; }
 
     .game-screen { display: none; height: 100vh; width: 100vw; flex-direction: column; position: absolute; top: 0; left: 0; }
+    #screen-binder { padding-bottom: 15vh; }
     .active-screen { display: flex !important; z-index: 100; }
 
     /* BINDER */
@@ -36,8 +37,8 @@
     body.dark .binder-tray { background: #4a5568; border-color: #2d3748; }
     body.dark .header h1 { color: #884747; }
     body.dark .input-bar { background: #1a1a1a; }
-    body.dark .play-footer { background: #555555; color: white; }
-    body.dark .play-ready { background: #6b396a; }
+    body.dark .play-footer { background: #884747; color: white; }
+    body.dark .play-ready { background: #aa5555; }
     body.dark .card { background: #e8e8e8; }
     body.dark .profile-dropdown { background: #2d2d2d; border: 1px solid #444; }
     body.dark .profile-dropdown a { color: #eee; }
@@ -75,8 +76,8 @@
     .input-bar input { padding: 10px; border-radius: 12px; font-family: 'Righteous'; width: 140px; border: 2px solid #ddd; }
     .btn-add { background: #ff80ab; color: white; padding: 10px 20px; border-radius: 15px; cursor: pointer; font-family: 'Righteous'; }
 
-    .play-footer { height: 15vh; background: #424242; color: white; font-size: 70px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.2s; }
-    .play-ready { background: #ff8a80; }
+    .play-footer { height: 15vh; background: #ff8a80; color: white; font-size: 70px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background 0.2s; position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
+    .play-ready { background: #ff4081; }
 
     /* LOBBY */
     #screen-lobby { background: #ff8a80; align-items: center; justify-content: center; }
