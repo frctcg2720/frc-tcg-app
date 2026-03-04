@@ -32,17 +32,20 @@
     body.dark .toggle-thumb { left: 22px; }
 
     /* DARK MODE STYLES */
-    body.dark { background: #1a1a2e; }
-    body.dark .binder-tray { background: #16213e; border-color: #0f3460; }
-    body.dark .scroll-container { background: #16213e; }
-    body.dark .header h1 { color: #ff8a80; }
-    body.dark .input-bar { background: #1a1a2e; }
-    body.dark .play-footer { background: #2d2d2d; }
-    body.dark .play-ready { background: #ff6b6b; }
-    body.dark .profile-dropdown { background: #2d2d44; }
+    body.dark { background: #1a1a1a; }
+    body.dark .binder-tray { background: #4a5568; border-color: #2d3748; }
+    body.dark .header h1 { color: #8b1a1a; }
+    body.dark .input-bar { background: #1a1a1a; }
+    body.dark .play-footer { background: #555555; color: white; }
+    body.dark .play-ready { background: #6b46c1; }
+    body.dark .card { background: #e8e8e8; }
+    body.dark .profile-dropdown { background: #2d2d2d; }
     body.dark .profile-dropdown a { color: #eee; }
-    body.dark .profile-dropdown a:hover { background: #3d3d5c; }
+    body.dark .profile-dropdown a:hover { background: #3d3d3d; }
     body.dark #scanOverlay { background: rgba(0,0,0,0.95); }
+    body.dark .btn-scan { background: #6b46c1; box-shadow: 0 5px 0 #44337a; }
+    body.dark .toggle-track { background: #6b46c1; }
+    body.dark .screen-header h1 { color: #8b1a1a; }
 
     .binder-tray { background: #82b1ff; border: 10px solid #448aff; margin: 0 auto; width: 90%; max-width: 860px; display: flex; flex-direction: column; position: relative; border-radius: 40px; overflow: hidden; }
     .scroll-container { width: 100%; overflow-x: auto; overflow-y: hidden; display: flex; align-items: flex-start; padding: 20px 30px 25px 30px; }
@@ -119,14 +122,11 @@
     <div class="header">
       <h1>FRC TCG</h1>
       <div class="profile-wrap">
-      <div class="dark-toggle" onclick="toggleDark()" title="Dark mode">
-        <div class="toggle-track"><div class="toggle-thumb"></div></div>
-      </div>
       <div class="profile-circle" onclick="toggleDropdown()">
-        👤
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         <div class="profile-dropdown" id="profileDropdown">
-          <a onclick="showStats()">📊 Stats &amp; Leaderboard</a>
-          <a class="danger" onclick="doLogout()">🚪 Log Out</a>
+          <a onclick="showStats()">Stats &amp; Leaderboard</a>
+          <a class="danger" onclick="doLogout()">Log Out</a>
         </div>
       </div>
     </div>
@@ -146,6 +146,9 @@
       <div class="scan-cancel" onclick="closeScanner()">Cancel</div>
     </div>
     <div class="input-bar">
+      <div class="dark-toggle" onclick="toggleDark()" title="Dark mode">
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </div>
       <div class="btn-scan" onclick="openScanner()">SCAN CARD</div>
     </div>
     <div id="playBtn" class="play-footer" onclick="goToLobby()">PLAY</div>
@@ -390,7 +393,7 @@
       const file = e.target.files[0];
       if (!file) return;
       const status = document.getElementById('scanStatus');
-      status.innerText = '🔍 Scanning card...';
+      status.innerText = 'Scanning card...';
       try {
         const base64 = await new Promise((res, rej) => {
           const r = new FileReader();
@@ -419,21 +422,21 @@
         const text = data.content?.[0]?.text || '';
         let parsed;
         try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); }
-        catch { status.innerText = '❌ Could not read card. Try a clearer photo!'; return; }
+        catch { status.innerText = 'Could not read card. Try a clearer photo!'; return; }
         const linkIndex = findCardIndex(parsed.name, parsed.ability1, parsed.ability2);
-        if (linkIndex === -1) { status.innerText = '❌ Not recognized: ' + (parsed.name || '?') + ' / ' + (parsed.ability1 || '?'); return; }
+        if (linkIndex === -1) { status.innerText = 'Not recognized: ' + (parsed.name || '?') + ' / ' + (parsed.ability1 || '?'); return; }
         const existing = await getDocs(collection(db, 'users', currentUser.username, 'binder'));
         let duplicate = false;
         existing.forEach(d => { if (d.data().linkIndex === linkIndex) duplicate = true; });
-        if (duplicate) { status.innerText = '⚠️ You already have ' + CARD_NAMES[linkIndex-1] + '!'; return; }
+        if (duplicate) { status.innerText = 'You already have ' + CARD_NAMES[linkIndex-1] + '!'; return; }
         await setDoc(doc(db, 'users', currentUser.username, 'binder', linkIndex.toString()), {
           name: CARD_NAMES[linkIndex - 1], linkIndex, addedAt: new Date().toISOString()
         });
-        status.innerText = '✅ Added ' + CARD_NAMES[linkIndex-1] + '!';
+        status.innerText = 'Added ' + CARD_NAMES[linkIndex-1] + '!';
         setTimeout(() => { closeScanner(); loadBinder(); }, 1200);
       } catch(err) {
         console.error(err);
-        status.innerText = '❌ Error scanning. Check connection!';
+        status.innerText = 'Error scanning. Check connection!';
       }
     });
 
