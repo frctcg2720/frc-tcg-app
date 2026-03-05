@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FRC TCG</title>
   <link href="https://fonts.googleapis.com/css2?family=Righteous&display=swap" rel="stylesheet">
@@ -74,14 +75,20 @@
       return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
     }
 
-    // Already logged in?
-    if (sessionStorage.getItem('frctcg_user')) window.location.href = 'app.html';
+    // Splash always plays first, then redirect if logged in
+    const alreadyLoggedIn = !!sessionStorage.getItem('frctcg_user');
 
-    // Splash
     setTimeout(() => {
       const splash = document.getElementById('splash');
       splash.classList.add('fade-out');
-      setTimeout(() => { splash.style.display = 'none'; showScreen('loginScreen'); }, 1000);
+      setTimeout(() => {
+        splash.style.display = 'none';
+        if (alreadyLoggedIn) {
+          window.location.href = 'app.html';
+        } else {
+          showScreen('loginScreen');
+        }
+      }, 1000);
     }, 7000);
 
     window.showScreen = function(id) {
