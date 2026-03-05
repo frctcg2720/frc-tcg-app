@@ -158,6 +158,12 @@
     body.dark .htp-section p, body.dark .htp-section li { color: #ccc; }
     body.dark .btn-htp { border-color: #884747; color: #884747; }
 
+    /* CARD PREVIEW OVERLAY */
+    #cardPreview { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 7000; display: none; align-items: center; justify-content: center; }
+    #cardPreview.open { display: flex; }
+    #cardPreview img { max-height: 80vh; max-width: 90vw; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: popIn 0.2s ease; object-fit: contain; }
+    @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
     /* VICTORY */
     #screen-victory { background: #ff8a8a; align-items: center; justify-content: center; position: relative; overflow: hidden; }
     .confetti { position: absolute; width: 10px; height: 10px; animation: confetti-fall 3s linear infinite; }
@@ -426,6 +432,14 @@
     });
 
     window.openHtp = function() { document.getElementById('htpOverlay').classList.add('open'); };
+
+    window.showCardPreview = function(imgSrc) {
+      document.getElementById('cardPreviewImg').src = imgSrc;
+      document.getElementById('cardPreview').classList.add('open');
+    };
+    window.closeCardPreview = function() {
+      document.getElementById('cardPreview').classList.remove('open');
+    };
     window.closeHtp = function() { document.getElementById('htpOverlay').classList.remove('open'); };
 
     window.showStats = function() {
@@ -689,7 +703,15 @@
           if (shouldHighlight) div.classList.add('active-card');
           if (card.isDead) { div.style.filter = 'grayscale(100%)'; div.style.opacity = '0.5'; div.style.pointerEvents = 'none'; }
           div.innerHTML = `<img src="${CARD_LINKS[card.linkIndex - 1]}">`;
-          if (isMySide) div.onclick = () => onCardClick(div, i);
+          div.onclick = (e) => {
+            const src = CARD_LINKS[card.linkIndex - 1];
+            if (isMySide) {
+              // Short tap = preview, long press handled by onCardClick for swap
+              onCardClick(div, i);
+            } else {
+              showCardPreview(src);
+            }
+          };
           holder.appendChild(div);
         });
       };
@@ -879,5 +901,9 @@
     }
 
   </script>
+  <!-- CARD PREVIEW OVERLAY -->
+  <div id="cardPreview" onclick="closeCardPreview()">
+    <img id="cardPreviewImg" src="" alt="Card">
+  </div>
 </body>
 </html>
