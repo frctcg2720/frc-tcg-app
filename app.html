@@ -162,6 +162,23 @@
     /* STATS SCREEN */
     #screen-stats { background: #eeeeee; overflow-y: auto; }
     body.dark #screen-stats { background: #1a1a1a; }
+    .lb-tab { background: #ddd; color: #777; font-family: Righteous; font-size: 17px; padding: 10px 24px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+    .lb-tab-active { background: #ff80ab; color: white; box-shadow: 0 3px 0 #c2185b; }
+    .lb-row { display: flex; align-items: center; background: white; border-radius: 18px; padding: 14px 18px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); gap: 14px; }
+    .lb-row.lb-me { border: 2px solid #ff80ab; }
+    .lb-rank { font-size: 22px; font-family: Righteous; color: #ccc; min-width: 36px; text-align:center; }
+    .lb-rank.gold { color: #ffd700; font-size: 26px; }
+    .lb-rank.silver { color: #aaa; font-size: 26px; }
+    .lb-rank.bronze { color: #cd7f32; font-size: 26px; }
+    .lb-name { font-family: Righteous; font-size: 18px; color: #333; flex: 1; }
+    .lb-record { font-family: Righteous; font-size: 13px; color: #aaa; }
+    .lb-wins { font-family: Righteous; font-size: 20px; color: #ff80ab; min-width: 48px; text-align:right; }
+    body.dark .lb-tab { background: #3d3d3d; color: #aaa; }
+    body.dark .lb-tab-active { background: #6b396a; box-shadow: 0 3px 0 #3d1f3c; }
+    body.dark .lb-row { background: #2d2d2d; }
+    body.dark .lb-row.lb-me { border-color: #884747; }
+    body.dark .lb-name { color: #eee; }
+    body.dark .lb-wins { color: #884747; }
 
     /* LEADERBOARD SCREEN */
     #screen-leaderboard { background: #eeeeee; overflow-y: auto; }
@@ -311,8 +328,8 @@
   </div>
 
   <!-- STATS & LEADERBOARD SCREEN -->
-  <div id="screen-stats" class="game-screen">
-    <div class="header">
+  <div id="screen-stats" class="game-screen" style="overflow-y:auto;">
+    <div class="header" style="flex-shrink:0;">
       <h1>FRC TCG</h1>
       <div class="profile-wrap">
         <div class="profile-circle" onclick="switchScreen('screen-binder')">
@@ -320,9 +337,22 @@
         </div>
       </div>
     </div>
-    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:16px; padding:20px; text-align:center;">
-      <p style="font-family:Righteous; font-size:28px; color:#ff8a80;">Stats &amp; Leaderboard</p>
-      <p style="font-family:Righteous; font-size:16px; color:#aaa;">Coming soon — rankings and match stats will appear here.</p>
+    <div style="padding: 0 5% 40px; max-width:600px; margin:0 auto; width:100%;">
+      <!-- TABS -->
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <div id="tab-players" class="lb-tab lb-tab-active" onclick="showLbTab('players')">Players</div>
+        <div id="tab-teams" class="lb-tab" onclick="showLbTab('teams')">Teams</div>
+      </div>
+      <!-- PLAYERS PANEL -->
+      <div id="panel-players">
+        <div id="playerLBContent">
+          <div style="text-align:center; padding:40px; font-family:Righteous; color:#aaa;">Loading...</div>
+        </div>
+      </div>
+      <!-- TEAMS PANEL -->
+      <div id="panel-teams" style="display:none;">
+        <div style="text-align:center; padding:40px; font-family:Righteous; color:#aaa; font-size:18px;">Team leaderboard coming soon!</div>
+      </div>
     </div>
   </div>
 
@@ -492,10 +522,57 @@
       document.getElementById('cardPreview').classList.remove('open');
     };
 
-    window.showStats = function() {
+    window.showStats = async function() {
       document.getElementById('profileDropdown').classList.remove('open');
       switchScreen('screen-stats');
+      await loadPlayerLB();
     };
+
+    window.showLbTab = async function(tab) {
+      document.getElementById('tab-players').classList.toggle('lb-tab-active', tab === 'players');
+      document.getElementById('tab-teams').classList.toggle('lb-tab-active', tab === 'teams');
+      document.getElementById('panel-players').style.display = tab === 'players' ? 'block' : 'none';
+      document.getElementById('panel-teams').style.display = tab === 'teams' ? 'block' : 'none';
+      if (tab === 'players') await loadPlayerLB();
+    };
+
+    async function loadPlayerLB() {
+      const el = document.getElementById('playerLBContent');
+      el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;">Loading...</div>';
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const players = [];
+        snap.forEach(d => {
+          const u = d.data();
+          const wins = u.wins || 0;
+          const losses = u.losses || 0;
+          players.push({ name: u.firstName || u.username, username: u.username, wins, losses });
+        });
+        players.sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+        const active = players.filter(p => p.wins + p.losses > 0);
+        if (active.length === 0) {
+          el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;font-size:16px;">No matches played yet!</div>';
+          return;
+        }
+        const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+        el.innerHTML = active.map((p, i) => {
+          const isMe = p.username === currentUser.username;
+          const medal = medals[i] || null;
+          const rankClasses = ['gold','silver','bronze'];
+          const rc = rankClasses[i] || '';
+          return '<div class="lb-row' + (isMe ? ' lb-me' : '') + '">'
+            + '<div class="lb-rank ' + rc + '">' + (medal || ('#' + (i+1))) + '</div>'
+            + '<div style="flex:1;">'
+            + '<div class="lb-name">' + p.name + (isMe ? ' <span style="font-size:12px;color:#ff80ab;">(you)</span>' : '') + '</div>'
+            + '<div class="lb-record">' + p.wins + 'W &nbsp;\u00b7&nbsp; ' + p.losses + 'L</div>'
+            + '</div>'
+            + '<div class="lb-wins">' + p.wins + 'W</div>'
+            + '</div>';
+        }).join('');
+      } catch(e) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;">Could not load leaderboard.</div>';
+      }
+    }
 
     window.doLogout = function() {
       sessionStorage.removeItem('frctcg_user');
@@ -711,13 +788,21 @@
           clearInterval(matchInterval);
           document.getElementById('winnerName').innerText = data.winner.toUpperCase() + ' WON!';
           createConfetti(); switchScreen('screen-victory');
-          if (data.winner === (currentUser.firstName || 'Player')) {
+          // ── TRACK WIN / LOSS ──
+          const iWon = data.winner === (currentUser.firstName || currentUser.username);
+          try {
             const userSnap = await getDoc(doc(db, 'users', currentUser.username));
-            if (userSnap.exists() && !userSnap.data().firstWin) {
-              await updateDoc(doc(db, 'users', currentUser.username), { firstWin: true });
+            const ud = userSnap.data() || {};
+            const updates = {
+              wins: (ud.wins || 0) + (iWon ? 1 : 0),
+              losses: (ud.losses || 0) + (iWon ? 0 : 1),
+            };
+            if (iWon && !ud.firstWin) {
+              updates.firstWin = true;
               document.getElementById('firstWinMsg').style.display = 'block';
             }
-          }
+            await updateDoc(doc(db, 'users', currentUser.username), updates);
+          } catch(e) { console.error('Win tracking error', e); }
           return;
         }
         const isHost = (data.host === currentUser.username);
