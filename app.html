@@ -706,8 +706,7 @@
           div.innerHTML = `<img src="${CARD_LINKS[card.linkIndex - 1]}">`;
           div.onclick = (e) => {
             const src = CARD_LINKS[card.linkIndex - 1];
-            if (isMySide) {
-              // Short tap = preview, long press handled by onCardClick for swap
+            if (isMySide && isSwapping) {
               onCardClick(div, i);
             } else {
               showCardPreview(src);
