@@ -160,25 +160,35 @@
     body.dark .btn-htp { border-color: #884747; color: #884747; }
 
     /* STATS SCREEN */
-    #screen-stats { background: #eeeeee; overflow-y: auto; }
-    body.dark #screen-stats { background: #1a1a1a; }
-    .lb-tab { background: #ddd; color: #777; font-family: Righteous; font-size: 17px; padding: 10px 24px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
-    .lb-tab-active { background: #ff80ab; color: white; box-shadow: 0 3px 0 #c2185b; }
+    .stats-scroll { background: #eeeeee; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+    body.dark .stats-scroll { background: #1a1a1a; }
+    .stats-topbar { display: flex; align-items: center; gap: 14px; padding: 18px 5%; flex-shrink: 0; }
+    .stats-topbar span { font-family: Righteous; font-size: 22px; color: #ff8a80; }
+    body.dark .stats-topbar span { color: #884747; }
+    .stats-body { padding: 0 5% 40px; max-width: 600px; width: 100%; margin: 0 auto; }
+    .stats-section-title { font-family: Righteous; font-size: 20px; color: #888; margin-bottom: 12px; padding-left: 4px; }
+    body.dark .stats-section-title { color: #666; }
+    .stats-loading { text-align: center; padding: 30px; font-family: Righteous; color: #aaa; }
     .lb-row { display: flex; align-items: center; background: white; border-radius: 18px; padding: 14px 18px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); gap: 14px; }
     .lb-row.lb-me { border: 2px solid #ff80ab; }
-    .lb-rank { font-size: 22px; font-family: Righteous; color: #ccc; min-width: 36px; text-align:center; }
-    .lb-rank.gold { color: #ffd700; font-size: 26px; }
-    .lb-rank.silver { color: #aaa; font-size: 26px; }
-    .lb-rank.bronze { color: #cd7f32; font-size: 26px; }
-    .lb-name { font-family: Righteous; font-size: 18px; color: #333; flex: 1; }
-    .lb-record { font-family: Righteous; font-size: 13px; color: #aaa; }
-    .lb-wins { font-family: Righteous; font-size: 20px; color: #ff80ab; min-width: 48px; text-align:right; }
-    body.dark .lb-tab { background: #3d3d3d; color: #aaa; }
-    body.dark .lb-tab-active { background: #6b396a; box-shadow: 0 3px 0 #3d1f3c; }
+    .lb-rank { font-size: 20px; font-family: Righteous; color: #ccc; min-width: 36px; text-align: center; }
+    .lb-rank.gold { color: #ffd700; font-size: 24px; }
+    .lb-rank.silver { color: #b0b0b0; font-size: 24px; }
+    .lb-rank.bronze { color: #cd7f32; font-size: 24px; }
+    .lb-name { font-family: Righteous; font-size: 17px; color: #333; flex: 1; }
+    .lb-record { font-family: Righteous; font-size: 12px; color: #aaa; margin-top: 2px; }
+    .lb-wins { font-family: Righteous; font-size: 20px; color: #ff80ab; min-width: 52px; text-align: right; }
+    .my-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-tile { background: white; border-radius: 18px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .stat-tile-label { font-family: Righteous; font-size: 12px; color: #aaa; margin-bottom: 4px; }
+    .stat-tile-value { font-family: Righteous; font-size: 30px; color: #ff80ab; line-height: 1; }
     body.dark .lb-row { background: #2d2d2d; }
     body.dark .lb-row.lb-me { border-color: #884747; }
     body.dark .lb-name { color: #eee; }
     body.dark .lb-wins { color: #884747; }
+    body.dark .stat-tile { background: #2d2d2d; }
+    body.dark .stat-tile-label { color: #666; }
+    body.dark .stat-tile-value { color: #884747; }
 
     /* LEADERBOARD SCREEN */
     #screen-leaderboard { background: #eeeeee; overflow-y: auto; }
@@ -328,51 +338,35 @@
   </div>
 
   <!-- STATS & LEADERBOARD SCREEN -->
-  <div id="screen-stats" class="game-screen" style="overflow-y:auto;">
-    <div class="header" style="flex-shrink:0;">
-      <h1>FRC TCG</h1>
-      <div class="profile-wrap">
-        <div class="profile-circle" onclick="switchScreen('screen-binder')">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-        </div>
-      </div>
-    </div>
-    <div style="padding: 0 5% 40px; max-width:600px; margin:0 auto; width:100%;">
-      <!-- TABS -->
-      <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <div id="tab-players" class="lb-tab lb-tab-active" onclick="showLbTab('players')">Players</div>
-        <div id="tab-teams" class="lb-tab" onclick="showLbTab('teams')">Teams</div>
-      </div>
-      <!-- PLAYERS PANEL -->
-      <div id="panel-players">
-        <div id="playerLBContent">
-          <div style="text-align:center; padding:40px; font-family:Righteous; color:#aaa;">Loading...</div>
-        </div>
-      </div>
-      <!-- TEAMS PANEL -->
-      <div id="panel-teams" style="display:none;">
-        <div style="text-align:center; padding:40px; font-family:Righteous; color:#aaa; font-size:18px;">Team leaderboard coming soon!</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- LEADERBOARD -->
-  <div id="screen-leaderboard" class="game-screen">
-    <div class="lb-header">
-      <div class="lb-back" onclick="switchScreen('screen-binder')">
+  <!-- STATS & LEADERBOARD SCREEN -->
+  <div id="screen-stats" class="game-screen stats-scroll">
+    <!-- sticky back header -->
+    <div class="stats-topbar">
+      <div class="profile-circle" onclick="switchScreen('screen-binder')" style="background:#ff80ab;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
       </div>
-      <h1>Leaderboard</h1>
+      <span>Stats &amp; Leaderboard</span>
     </div>
-    <div class="lb-body">
-      <div class="lb-card">
-        <h2>Player Leaderboard</h2>
-        <p>Coming soon — ranks players by most wins.</p>
+
+    <div class="stats-body">
+
+      <!-- PLAYER LEADERBOARD -->
+      <div class="stats-section-title">Player Leaderboard</div>
+      <div id="playerLBContent">
+        <div class="stats-loading">Loading...</div>
       </div>
-      <div class="lb-card">
-        <h2>Team Leaderboard</h2>
-        <p>Coming soon — ranks FRC teams by combined wins.</p>
+
+      <!-- TEAM LEADERBOARD -->
+      <div class="stats-section-title" style="margin-top:32px;">Team Leaderboard</div>
+      <div id="teamLBContent">
+        <div class="stats-loading">Loading...</div>
       </div>
+
+      <!-- MY STATS -->
+      <div class="stats-section-title" style="margin-top:32px;">My Stats</div>
+      <div id="myStatsContent" class="my-stats-grid"></div>
+
+      <div style="height:40px;"></div>
     </div>
   </div>
 
@@ -522,57 +516,121 @@
       document.getElementById('cardPreview').classList.remove('open');
     };
 
-    window.showStats = async function() {
+    window.showStats = function() {
       document.getElementById('profileDropdown').classList.remove('open');
       switchScreen('screen-stats');
-      await loadPlayerLB();
+      loadAllStats();
     };
 
-    window.showLbTab = async function(tab) {
-      document.getElementById('tab-players').classList.toggle('lb-tab-active', tab === 'players');
-      document.getElementById('tab-teams').classList.toggle('lb-tab-active', tab === 'teams');
-      document.getElementById('panel-players').style.display = tab === 'players' ? 'block' : 'none';
-      document.getElementById('panel-teams').style.display = tab === 'teams' ? 'block' : 'none';
-      if (tab === 'players') await loadPlayerLB();
-    };
+    function loadAllStats() {
+      loadPlayerLB();
+      loadTeamLB();
+      loadMyStats();
+    }
 
     async function loadPlayerLB() {
       const el = document.getElementById('playerLBContent');
-      el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;">Loading...</div>';
+      el.innerHTML = '<div class="stats-loading">Loading...</div>';
       try {
         const snap = await getDocs(collection(db, 'users'));
         const players = [];
         snap.forEach(d => {
           const u = d.data();
-          const wins = u.wins || 0;
-          const losses = u.losses || 0;
-          players.push({ name: u.firstName || u.username, username: u.username, wins, losses });
+          players.push({ name: u.firstName || u.username, username: u.username, wins: u.wins || 0, losses: u.losses || 0 });
         });
         players.sort((a, b) => b.wins - a.wins || a.losses - b.losses);
         const active = players.filter(p => p.wins + p.losses > 0);
         if (active.length === 0) {
-          el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;font-size:16px;">No matches played yet!</div>';
+          el.innerHTML = '<div class="stats-loading">No matches played yet!</div>';
           return;
         }
-        const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+        const medals = ['🥇','🥈','🥉'];
+        const rankClasses = ['gold','silver','bronze'];
         el.innerHTML = active.map((p, i) => {
           const isMe = p.username === currentUser.username;
-          const medal = medals[i] || null;
-          const rankClasses = ['gold','silver','bronze'];
           const rc = rankClasses[i] || '';
+          const rank = medals[i] || ('#' + (i+1));
           return '<div class="lb-row' + (isMe ? ' lb-me' : '') + '">'
-            + '<div class="lb-rank ' + rc + '">' + (medal || ('#' + (i+1))) + '</div>'
-            + '<div style="flex:1;">'
-            + '<div class="lb-name">' + p.name + (isMe ? ' <span style="font-size:12px;color:#ff80ab;">(you)</span>' : '') + '</div>'
-            + '<div class="lb-record">' + p.wins + 'W &nbsp;\u00b7&nbsp; ' + p.losses + 'L</div>'
+            + '<div class="lb-rank ' + rc + '">' + rank + '</div>'
+            + '<div style="flex:1">'
+            + '<div class="lb-name">' + p.name + (isMe ? ' <span style="font-size:12px;color:#ff80ab">(you)</span>' : '') + '</div>'
+            + '<div class="lb-record">' + p.wins + 'W · ' + p.losses + 'L</div>'
             + '</div>'
             + '<div class="lb-wins">' + p.wins + 'W</div>'
             + '</div>';
         }).join('');
-      } catch(e) {
-        el.innerHTML = '<div style="text-align:center;padding:40px;font-family:Righteous;color:#aaa;">Could not load leaderboard.</div>';
-      }
+      } catch(e) { el.innerHTML = '<div class="stats-loading">Could not load.</div>'; }
     }
+
+    async function loadTeamLB() {
+      const el = document.getElementById('teamLBContent');
+      el.innerHTML = '<div class="stats-loading">Loading...</div>';
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const teams = {};
+        snap.forEach(d => {
+          const u = d.data();
+          if (!u.teamNumber) return;
+          const tn = String(u.teamNumber);
+          if (!teams[tn]) teams[tn] = { wins: 0, losses: 0, members: 0 };
+          teams[tn].wins += (u.wins || 0);
+          teams[tn].losses += (u.losses || 0);
+          teams[tn].members++;
+        });
+        const list = Object.entries(teams)
+          .map(([tn, t]) => ({ tn, ...t }))
+          .filter(t => t.wins + t.losses > 0)
+          .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+        if (list.length === 0) {
+          el.innerHTML = '<div class="stats-loading">No team data yet!</div>';
+          return;
+        }
+        const medals = ['🥇','🥈','🥉'];
+        const rankClasses = ['gold','silver','bronze'];
+        el.innerHTML = list.map((t, i) => {
+          const myTeam = currentUser.teamNumber && String(t.tn) === String(currentUser.teamNumber);
+          const rc = rankClasses[i] || '';
+          const rank = medals[i] || ('#' + (i+1));
+          return '<div class="lb-row' + (myTeam ? ' lb-me' : '') + '">'
+            + '<div class="lb-rank ' + rc + '">' + rank + '</div>'
+            + '<div style="flex:1">'
+            + '<div class="lb-name">Team ' + t.tn + (myTeam ? ' <span style="font-size:12px;color:#ff80ab">(you)</span>' : '') + '</div>'
+            + '<div class="lb-record">' + t.members + ' player' + (t.members !== 1 ? 's' : '') + ' · ' + t.wins + 'W · ' + t.losses + 'L</div>'
+            + '</div>'
+            + '<div class="lb-wins">' + t.wins + 'W</div>'
+            + '</div>';
+        }).join('');
+      } catch(e) { el.innerHTML = '<div class="stats-loading">Could not load.</div>'; }
+    }
+
+    async function loadMyStats() {
+      const el = document.getElementById('myStatsContent');
+      el.innerHTML = '<div class="stats-loading" style="grid-column:span 2">Loading...</div>';
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.username));
+        const s = snap.data() || {};
+        const wins = s.wins || 0;
+        const losses = s.losses || 0;
+        const total = wins + losses;
+        const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+        const tiles = [
+          { label: 'WINS', value: wins },
+          { label: 'LOSSES', value: losses },
+          { label: 'WIN RATE', value: wr + '%' },
+          { label: 'MATCHES', value: total },
+          { label: 'WIN STREAK', value: s.currentStreak || 0 },
+          { label: 'BEST STREAK', value: s.bestStreak || 0 },
+          { label: 'FRC TEAM', value: s.teamNumber ? '#' + s.teamNumber : '-' },
+        ];
+        el.innerHTML = tiles.map(t =>
+          '<div class="stat-tile">'
+          + '<div class="stat-tile-label">' + t.label + '</div>'
+          + '<div class="stat-tile-value">' + t.value + '</div>'
+          + '</div>'
+        ).join('');
+      } catch(e) { el.innerHTML = '<div class="stats-loading" style="grid-column:span 2">Could not load.</div>'; }
+    }
+
 
     window.doLogout = function() {
       sessionStorage.removeItem('frctcg_user');
