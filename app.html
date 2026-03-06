@@ -160,7 +160,7 @@
     body.dark .btn-htp { border-color: #884747; color: #884747; }
 
     /* STATS SCREEN */
-    .stats-scroll { background: #eeeeee; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
+    .stats-scroll { background: #eeeeee; overflow-y: auto; overflow-x: hidden; flex-direction: column; }
     body.dark .stats-scroll { background: #1a1a1a; }
     .stats-topbar { display: flex; align-items: center; gap: 14px; padding: 18px 5%; flex-shrink: 0; }
     .stats-topbar span { font-family: Righteous; font-size: 22px; color: #ff8a80; }
@@ -232,7 +232,7 @@
           <ellipse cx="50" cy="78" rx="26" ry="18" fill="white"/>
         </svg>
         <div class="profile-dropdown" id="profileDropdown">
-          <a onclick="showLeaderboard()">Stats &amp; Leaderboard</a>
+          <a onclick="showStats()">Stats &amp; Leaderboard</a>
           <a class="danger" onclick="doLogout()">Log Out</a>
         </div>
       </div>
@@ -339,7 +339,7 @@
 
   <!-- STATS & LEADERBOARD SCREEN -->
   <!-- STATS & LEADERBOARD SCREEN -->
-  <div id="screen-stats" class="game-screen stats-scroll">
+  <div id="screen-stats" class="game-screen stats-scroll" style="overflow-y:auto;">
     <!-- sticky back header -->
     <div class="stats-topbar">
       <div class="profile-circle" onclick="switchScreen('screen-binder')" style="background:#ff80ab;">
