@@ -113,7 +113,7 @@
         const user = snap.data();
         const hash = await hashPassword(password);
         if (hash !== user.passwordHash) { errorEl.innerText = 'Wrong password!'; errorEl.style.display = 'block'; btn.innerText = "LET'S GO →"; btn.style.pointerEvents = 'auto'; return; }
-        sessionStorage.setItem('frctcg_user', JSON.stringify({ username, firstName: user.firstName }));
+        sessionStorage.setItem('frctcg_user', JSON.stringify({ username, firstName: user.firstName, teamNumber: user.teamNumber || null }));
         window.location.href = 'app.html';
       } catch (err) {
         errorEl.innerText = 'Connection error. Try again!'; errorEl.style.display = 'block';
