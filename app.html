@@ -571,8 +571,9 @@
         const teams = {};
         snap.forEach(d => {
           const u = d.data();
-          if (!u.teamNumber) return;
-          const tn = String(u.teamNumber);
+          const teamNum = u.teamNumber || 2720;
+          if (!teamNum) return;
+          const tn = String(u.teamNumber || 2720);
           if (!teams[tn]) teams[tn] = { wins: 0, losses: 0, members: 0 };
           teams[tn].wins += (u.wins || 0);
           teams[tn].losses += (u.losses || 0);
@@ -589,7 +590,7 @@
         const medals = ['🥇','🥈','🥉'];
         const rankClasses = ['gold','silver','bronze'];
         el.innerHTML = list.map((t, i) => {
-          const myTeam = currentUser.teamNumber && String(t.tn) === String(currentUser.teamNumber);
+          const myTeam = String(t.tn) === String(currentUser.teamNumber || 2720);
           const rc = rankClasses[i] || '';
           const rank = medals[i] || ('#' + (i+1));
           return '<div class="lb-row' + (myTeam ? ' lb-me' : '') + '">'
@@ -624,9 +625,8 @@
           { label: 'TOTAL DMG DEALT', value: s.totalDmg || 0 },
           { label: 'TOTAL DMG HEALED', value: s.totalHeal || 0 },
           { label: 'CARDS KILLED', value: s.totalKO || 0 },
-          { label: 'FAVORITE CARD', value: s.favCard || '—', wide: true },
           { label: 'HAT TRICKS', value: s.hatTricks || 0, tooltip: true },
-          { label: 'FRC TEAM', value: s.teamNumber ? '#' + s.teamNumber : '—' },
+          { label: 'FAVORITE CARD', value: s.favCard || '—', wide: true },
         ];
         el.innerHTML = tiles.map(t => {
           const extra = t.tooltip
