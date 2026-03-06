@@ -58,6 +58,7 @@
       <div class="tray-title">SIGN UP</div>
       <input type="text" id="signupFirstName" placeholder="First Name" autocomplete="off" />
       <input type="text" id="signupUsername" placeholder="Username (letters, numbers, _)" autocomplete="off" />
+      <input type="number" id="signupTeam" placeholder="FRC Team Number" autocomplete="off" min="1" max="99999" />
       <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" />
       <div class="error-box" id="signupError"></div>
       <div class="btn-main" id="signupBtn" onclick="handleSignup()">CREATE ACCOUNT →</div>
@@ -128,7 +129,10 @@
       const btn = document.getElementById('signupBtn');
       errorEl.style.display = 'none';
 
-      if (!firstName || !username || !password) { errorEl.innerText = 'Please fill in all fields!'; errorEl.style.display = 'block'; return; }
+      const teamRaw = document.getElementById('signupTeam').value.trim();
+      const teamNumber = parseInt(teamRaw);
+      if (!firstName || !username || !password || !teamRaw) { errorEl.innerText = 'Please fill in all fields!'; errorEl.style.display = 'block'; return; }
+      if (isNaN(teamNumber) || teamNumber < 1 || teamNumber > 99999) { errorEl.innerText = 'Enter a valid FRC team number!'; errorEl.style.display = 'block'; return; }
       if (username.length < 3) { errorEl.innerText = 'Username must be at least 3 characters!'; errorEl.style.display = 'block'; return; }
       if (password.length < 6) { errorEl.innerText = 'Password must be at least 6 characters!'; errorEl.style.display = 'block'; return; }
       if (!/^[a-z0-9_]+$/.test(username)) { errorEl.innerText = 'Username: letters, numbers, underscores only!'; errorEl.style.display = 'block'; return; }
@@ -138,7 +142,7 @@
         const existing = await getDoc(doc(db, 'users', username));
         if (existing.exists()) { errorEl.innerText = 'Username already taken!'; errorEl.style.display = 'block'; btn.innerText = 'CREATE ACCOUNT →'; btn.style.pointerEvents = 'auto'; return; }
         const passwordHash = await hashPassword(password);
-        await setDoc(doc(db, 'users', username), { firstName, username, passwordHash, firstWin: false, createdAt: new Date().toISOString() });
+        await setDoc(doc(db, 'users', username), { firstName, username, passwordHash, teamNumber, firstWin: false, createdAt: new Date().toISOString() });
         sessionStorage.setItem('frctcg_user', JSON.stringify({ username, firstName }));
         window.location.href = 'app.html';
       } catch (err) {
