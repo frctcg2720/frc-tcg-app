@@ -180,6 +180,7 @@
     .lb-wins { font-family: Righteous; font-size: 20px; color: #ff80ab; min-width: 52px; text-align: right; }
     .my-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .stat-tile { background: white; border-radius: 18px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+    .stat-tile-wide { grid-column: span 2; }
     .stat-tile-label { font-family: Righteous; font-size: 12px; color: #aaa; margin-bottom: 4px; }
     .stat-tile-value { font-family: Righteous; font-size: 30px; color: #ff80ab; line-height: 1; }
     body.dark .lb-row { background: #2d2d2d; }
@@ -620,16 +621,34 @@
           { label: 'MATCHES', value: total },
           { label: 'WIN STREAK', value: s.currentStreak || 0 },
           { label: 'BEST STREAK', value: s.bestStreak || 0 },
-          { label: 'FRC TEAM', value: s.teamNumber ? '#' + s.teamNumber : '-' },
+          { label: 'TOTAL DMG DEALT', value: s.totalDmg || 0 },
+          { label: 'TOTAL DMG HEALED', value: s.totalHeal || 0 },
+          { label: 'CARDS KILLED', value: s.totalKO || 0 },
+          { label: 'FAVORITE CARD', value: s.favCard || '—', wide: true },
+          { label: 'HAT TRICKS', value: s.hatTricks || 0, tooltip: true },
+          { label: 'FRC TEAM', value: s.teamNumber ? '#' + s.teamNumber : '—' },
         ];
-        el.innerHTML = tiles.map(t =>
-          '<div class="stat-tile">'
-          + '<div class="stat-tile-label">' + t.label + '</div>'
-          + '<div class="stat-tile-value">' + t.value + '</div>'
-          + '</div>'
-        ).join('');
+        el.innerHTML = tiles.map(t => {
+          const extra = t.tooltip
+            ? ' onclick="showHatTrickInfo()" style="cursor:pointer;"'
+            : '';
+          const badge = t.tooltip
+            ? '<span style="font-size:11px;background:#ff80ab;color:white;border-radius:8px;padding:1px 6px;margin-left:6px;vertical-align:middle;">?</span>'
+            : '';
+          return '<div class="stat-tile' + (t.wide ? ' stat-tile-wide' : '') + '"' + extra + '>'
+            + '<div class="stat-tile-label">' + t.label + badge + '</div>'
+            + '<div class="stat-tile-value" style="' + (t.wide ? 'font-size:18px;' : '') + '">' + t.value + '</div>'
+            + '</div>';
+        }).join('');
       } catch(e) { el.innerHTML = '<div class="stats-loading" style="grid-column:span 2">Could not load.</div>'; }
     }
+
+    window.showHatTrickInfo = function() {
+      document.getElementById('hatTrickTooltip').classList.add('open');
+    };
+    window.closeHatTrick = function() {
+      document.getElementById('hatTrickTooltip').classList.remove('open');
+    };
 
 
     window.doLogout = function() {
@@ -846,15 +865,41 @@
           clearInterval(matchInterval);
           document.getElementById('winnerName').innerText = data.winner.toUpperCase() + ' WON!';
           createConfetti(); switchScreen('screen-victory');
-          // ── TRACK WIN / LOSS ──
+          // ── TRACK WIN / LOSS + STATS ──
           const iWon = data.winner === (currentUser.firstName || currentUser.username);
           try {
             const userSnap = await getDoc(doc(db, 'users', currentUser.username));
             const ud = userSnap.data() || {};
+            const st = (data.statTrack || {})[currentUser.username] || {};
+            // hat trick: won AND none of my cards are dead
+            const isHost2 = data.host === currentUser.username;
+            const myFinalDeck = isHost2 ? data.hostDeck : data.guestDeck;
+            const hatTrick = iWon && myFinalDeck && myFinalDeck.every(c => !c.isDead);
+            // favorite card: find card with most uses this match
+            const cardUse = st.cardUse || {};
+            const favCardThisMatch = Object.keys(cardUse).length > 0
+              ? Object.keys(cardUse).reduce((a,b) => cardUse[a] >= cardUse[b] ? a : b)
+              : null;
+            // merge with lifetime card usage
+            const lifetimeCardUse = ud.cardUse || {};
+            if (favCardThisMatch) {
+              Object.entries(cardUse).forEach(([name, count]) => {
+                lifetimeCardUse[name] = (lifetimeCardUse[name] || 0) + count;
+              });
+            }
+            const favCard = Object.keys(lifetimeCardUse).length > 0
+              ? Object.keys(lifetimeCardUse).reduce((a,b) => lifetimeCardUse[a] >= lifetimeCardUse[b] ? a : b)
+              : null;
             const updates = {
               wins: (ud.wins || 0) + (iWon ? 1 : 0),
               losses: (ud.losses || 0) + (iWon ? 0 : 1),
+              totalDmg: (ud.totalDmg || 0) + (st.dmg || 0),
+              totalHeal: (ud.totalHeal || 0) + (st.heal || 0),
+              totalKO: (ud.totalKO || 0) + (st.ko || 0),
+              hatTricks: (ud.hatTricks || 0) + (hatTrick ? 1 : 0),
+              cardUse: lifetimeCardUse,
             };
+            if (favCard) updates.favCard = favCard;
             if (iWon && !ud.firstWin) {
               updates.firstWin = true;
               document.getElementById('firstWinMsg').style.display = 'block';
@@ -1047,6 +1092,26 @@
         }
         if (slot === 1) myCard.p1Used++; else myCard.p2Used++;
         match.announcement = `ABILITY ${slot} USED`;
+
+        // ── TRACK IN-MATCH STATS ──
+        if (!match.statTrack) match.statTrack = {};
+        const key = currentUser.username;
+        if (!match.statTrack[key]) match.statTrack[key] = { dmg:0, heal:0, ko:0, cardUse:{} };
+        const t = match.statTrack[key];
+        // damage dealt this move
+        if ((type === 'A' || type === 'SS') && oppCard.isDead === false) {
+          // actual dmg is hp before - hp after, but we just track baseDmg approximation
+        }
+        const prevOppHP = oppDeck[oppIdx] ? (oppDeck[oppIdx].currentHP + Math.floor(dmg || 0)) : 0;
+        if (type === 'A' || type === 'SS') t.dmg += Math.floor(dmg || 0);
+        if (type === 'H') {
+          const healAmt = myCard.HealthBoost === 'FULL' ? (myCard.maxHP - myCard.currentHP) : (Number(myCard.HealthBoost) || 0);
+          t.heal += Math.floor(healAmt);
+        }
+        if (oppCard.isDead) t.ko += 1;
+        // favorite card tracking
+        const cname = myCard.name || ('Card ' + myCard.linkIndex);
+        t.cardUse[cname] = (t.cardUse[cname] || 0) + 1;
       }
 
       function nextAlive(deck, idx) {
@@ -1093,6 +1158,18 @@
     }
 
   </script>
+  <!-- HAT TRICK TOOLTIP -->
+  <div id="hatTrickTooltip" class="htp-overlay" onclick="closeHatTrick()">
+    <div class="htp-box" style="max-width:340px; text-align:center;" onclick="event.stopPropagation()">
+      <div class="htp-close" onclick="closeHatTrick()">&#10005;</div>
+      <div style="font-size:48px; margin-bottom:10px;">🎩</div>
+      <h2 style="margin-bottom:12px;">Hat Trick</h2>
+      <p style="font-family:sans-serif; font-size:15px; color:#555; line-height:1.6;">
+        A <strong>Hat Trick</strong> is when you win a match without any of your 3 cards being knocked out. All 3 survive — clean sweep!
+      </p>
+    </div>
+  </div>
+
   <!-- CARD PREVIEW OVERLAY -->
   <div id="cardPreview" onclick="closeCardPreview()">
     <img id="cardPreviewImg" src="" alt="Card">
