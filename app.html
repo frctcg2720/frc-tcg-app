@@ -160,31 +160,24 @@
     body.dark .btn-htp { border-color: #884747; color: #884747; }
 
     /* STATS SCREEN */
-    .stats-tab { background: #ddd; color: #666; font-family: Righteous; font-size: 16px; padding: 10px 22px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
-    .stats-tab.active-tab { background: #ff80ab; color: white; box-shadow: 0 3px 0 #c2185b; }
-    .stat-card { background: white; border-radius: 20px; padding: 16px 18px; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
-    .stat-card .stat-label { font-size: 12px; color: #999; font-family: Righteous; margin-bottom: 4px; }
-    .stat-card .stat-value { font-size: 28px; color: #ff80ab; font-family: Righteous; line-height: 1; }
-    .stat-card .stat-sub { font-size: 12px; color: #bbb; margin-top: 4px; font-family: Righteous; }
-    .lb-row { display: flex; align-items: center; background: white; border-radius: 16px; padding: 14px 18px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); gap: 14px; }
-    .lb-rank { font-size: 22px; font-family: Righteous; color: #ccc; min-width: 32px; }
-    .lb-rank.gold { color: #ffd700; }
-    .lb-rank.silver { color: #c0c0c0; }
-    .lb-rank.bronze { color: #cd7f32; }
-    .lb-name { font-family: Righteous; font-size: 18px; color: #333; flex: 1; }
-    .lb-wins { font-family: Righteous; font-size: 18px; color: #ff80ab; }
-    .lb-sub { font-size: 12px; color: #999; font-family: Righteous; }
-    body.dark .stats-tab { background: #3d3d3d; color: #aaa; }
-    body.dark .stats-tab.active-tab { background: #6b396a; box-shadow: 0 3px 0 #3d1f3c; }
-    body.dark .stat-card { background: #2d2d2d; }
-    body.dark .stat-card .stat-label { color: #777; }
-    body.dark .stat-card .stat-value { color: #884747; }
-    body.dark .stat-card .stat-sub { color: #666; }
-    body.dark .lb-row { background: #2d2d2d; }
-    body.dark .lb-name { color: #eee; }
-    body.dark .lb-wins { color: #884747; }
-    body.dark .lb-sub { color: #666; }
+    #screen-stats { background: #eeeeee; overflow-y: auto; }
     body.dark #screen-stats { background: #1a1a1a; }
+
+    /* LEADERBOARD SCREEN */
+    #screen-leaderboard { background: #eeeeee; overflow-y: auto; }
+    body.dark #screen-leaderboard { background: #1a1a1a; }
+    .lb-header { height: 15vh; display: flex; justify-content: center; align-items: center; flex-shrink: 0; position: relative; }
+    .lb-header h1 { font-size: 52px; color: #ff8a80; margin: 0; }
+    body.dark .lb-header h1 { color: #884747; }
+    .lb-back { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: #ff80ab; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    body.dark .lb-back { background: #6b396a; }
+    .lb-body { padding: 10px 5% 40px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .lb-card { background: white; border-radius: 20px; padding: 30px; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+    .lb-card h2 { font-size: 22px; color: #ff80ab; margin: 0 0 10px; }
+    .lb-card p { font-size: 15px; color: #aaa; font-family: sans-serif; }
+    body.dark .lb-card { background: #2d2d2d; }
+    body.dark .lb-card h2 { color: #884747; }
+    body.dark .lb-card p { color: #666; }
 
     /* CARD PREVIEW OVERLAY */
     #cardPreview { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 7000; display: none; align-items: center; justify-content: center; }
@@ -212,7 +205,7 @@
           <ellipse cx="50" cy="78" rx="26" ry="18" fill="white"/>
         </svg>
         <div class="profile-dropdown" id="profileDropdown">
-          <a onclick="showStats()">Stats &amp; Leaderboard</a>
+          <a onclick="showLeaderboard()">Stats &amp; Leaderboard</a>
           <a class="danger" onclick="doLogout()">Log Out</a>
         </div>
       </div>
@@ -244,7 +237,7 @@
   <!-- HOW TO PLAY OVERLAY -->
   <div class="htp-overlay" id="htpOverlay">
     <div class="htp-box">
-      <div class="htp-close" onclick="closeHtp()">✕</div>
+      <div class="htp-close" onclick="closeHtp()">&#10005;</div>
       <h2>How To Play</h2>
       <div class="htp-section">
         <h3>Game Setup</h3>
@@ -318,8 +311,8 @@
   </div>
 
   <!-- STATS & LEADERBOARD SCREEN -->
-  <div id="screen-stats" class="game-screen" style="overflow-y:auto;">
-    <div class="header" style="flex-shrink:0;">
+  <div id="screen-stats" class="game-screen">
+    <div class="header">
       <h1>FRC TCG</h1>
       <div class="profile-wrap">
         <div class="profile-circle" onclick="switchScreen('screen-binder')">
@@ -327,31 +320,29 @@
         </div>
       </div>
     </div>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:16px; padding:20px; text-align:center;">
+      <p style="font-family:Righteous; font-size:28px; color:#ff8a80;">Stats &amp; Leaderboard</p>
+      <p style="font-family:Righteous; font-size:16px; color:#aaa;">Coming soon — rankings and match stats will appear here.</p>
+    </div>
+  </div>
 
-    <div style="padding: 0 5% 40px; max-width: 860px; margin: 0 auto; width: 100%;">
-
-      <!-- TABS -->
-      <div id="statsTabs" style="display:flex; gap:10px; margin-bottom:20px;">
-        <div class="stats-tab active-tab" onclick="showTab('myStats')">My Stats</div>
-        <div class="stats-tab" onclick="showTab('playerLB')">Players</div>
-        <div class="stats-tab" onclick="showTab('teamLB')">Teams</div>
+  <!-- LEADERBOARD -->
+  <div id="screen-leaderboard" class="game-screen">
+    <div class="lb-header">
+      <div class="lb-back" onclick="switchScreen('screen-binder')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
       </div>
-
-      <!-- MY STATS -->
-      <div id="myStats" class="stats-panel">
-        <div id="myStatsContent" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
+      <h1>Leaderboard</h1>
+    </div>
+    <div class="lb-body">
+      <div class="lb-card">
+        <h2>Player Leaderboard</h2>
+        <p>Coming soon — ranks players by most wins.</p>
       </div>
-
-      <!-- PLAYER LEADERBOARD -->
-      <div id="playerLB" class="stats-panel" style="display:none;">
-        <div id="playerLBContent"></div>
+      <div class="lb-card">
+        <h2>Team Leaderboard</h2>
+        <p>Coming soon — ranks FRC teams by combined wins.</p>
       </div>
-
-      <!-- TEAM LEADERBOARD -->
-      <div id="teamLB" class="stats-panel" style="display:none;">
-        <div id="teamLBContent"></div>
-      </div>
-
     </div>
   </div>
 
@@ -381,7 +372,7 @@
       <div class="card-holder" id="mySide"></div>
       <div class="action-container" style="width:100%;">
         <button id="actionBtn" class="action-button" onclick="toggleActionMenu()">Action</button>
-        <button id="confirmSwapBtn" class="btn-confirm-swap" onclick="finishSwap()">✓</button>
+        <button id="confirmSwapBtn" class="btn-confirm-swap" onclick="finishSwap()">&#10003;</button>
         <div id="actionMenu" class="action-menu">
           <div class="menu-grid">
             <button class="menu-btn" id="ability1Btn" onclick="useAbility(1, event)">Ability 1</button>
@@ -392,7 +383,7 @@
             </div>
             <button class="menu-btn" id="skipBtn" style="grid-column:span 2; color:#ff6b6b;" onclick="skipTurn(event)">Skip My Turn</button>
           </div>
-          <div id="finalConfirmBtn" class="check-confirm" onclick="confirmAndEndTurn()">✓</div>
+          <div id="finalConfirmBtn" class="check-confirm" onclick="confirmAndEndTurn()">&#10003;</div>
         </div>
       </div>
     </div>
@@ -405,7 +396,7 @@
       <h1 style="font-size:80px; color:#82b1ff; margin:20px 0;">GOOD GAME</h1>
       <h1 id="winnerName" style="font-size:80px; color:white; margin:30px 0; text-shadow:4px 4px 0 rgba(0,0,0,0.2);">NAME WON!</h1>
       <div id="firstWinMsg" style="display:none; background:white; color:#ff8a80; padding:20px 30px; border-radius:20px; font-size:20px; margin:0 20px 20px; line-height:1.5;">
-        🎉 Go to <strong>2720</strong> or <strong>2992</strong>'s pit to pick up your limited edition card!
+        Go to <strong>2720</strong> or <strong>2992</strong>'s pit to pick up your limited edition card!
       </div>
       <p style="color:white; font-size:18px; margin-top:30px; opacity:0.8; cursor:pointer;" onclick="window.location.reload()">Tap to return home</p>
     </div>
@@ -440,7 +431,6 @@
     const sessionData = sessionStorage.getItem('frctcg_user');
     if (!sessionData) { window.location.href = 'login.html'; }
     const currentUser = JSON.parse(sessionData || '{}');
-    // currentUser.username, currentUser.firstName
 
     let selectedCards = [];
     let currentMatchCode = "";
@@ -452,23 +442,18 @@
     let currentMyDeck = [];
     let currentMyEnergy = 0;
 
-    // Set display name
     document.getElementById('displayName').innerText = currentUser.firstName || 'Player';
-
-    // Load binder on start
     loadBinder();
 
-    // ── LOGOUT ──
+    // ── DARK MODE ──
     window.toggleDark = async function() {
       document.body.classList.toggle('dark');
       const isDark = document.body.classList.contains('dark');
       localStorage.setItem('darkMode', isDark);
-      // Save to Firestore so it persists across devices
       try {
         await updateDoc(doc(db, 'users', currentUser.username), { darkMode: isDark });
       } catch(e) {}
     };
-    // Restore dark mode - check Firestore first, fallback to localStorage
     async function restoreDarkMode() {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.username));
@@ -490,7 +475,6 @@
       dropdown.style.right = (window.innerWidth - rect.right) + 'px';
       dropdown.classList.toggle('open');
     };
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.profile-circle')) {
         document.getElementById('profileDropdown').classList.remove('open');
@@ -498,6 +482,7 @@
     });
 
     window.openHtp = function() { document.getElementById('htpOverlay').classList.add('open'); };
+    window.closeHtp = function() { document.getElementById('htpOverlay').classList.remove('open'); };
 
     window.showCardPreview = function(imgSrc) {
       document.getElementById('cardPreviewImg').src = imgSrc;
@@ -506,116 +491,11 @@
     window.closeCardPreview = function() {
       document.getElementById('cardPreview').classList.remove('open');
     };
-    window.closeHtp = function() { document.getElementById('htpOverlay').classList.remove('open'); };
 
-    window.showStats = async function() {
+    window.showStats = function() {
       document.getElementById('profileDropdown').classList.remove('open');
       switchScreen('screen-stats');
-      showTab('myStats');
-      await loadMyStats();
     };
-
-    window.showTab = async function(tab) {
-      document.querySelectorAll('.stats-tab').forEach((t,i) => {
-        t.classList.toggle('active-tab', ['myStats','playerLB','teamLB'][i] === tab);
-      });
-      document.querySelectorAll('.stats-panel').forEach(p => p.style.display = 'none');
-      document.getElementById(tab).style.display = 'block';
-      if (tab === 'playerLB') await loadPlayerLB();
-      if (tab === 'teamLB') await loadTeamLB();
-    };
-
-    async function loadMyStats() {
-      const snap = await getDoc(doc(db, 'users', currentUser.username));
-      const s = snap.data() || {};
-      const wins = s.wins || 0;
-      const losses = s.losses || 0;
-      const total = wins + losses;
-      const winRate = total > 0 ? Math.round((wins/total)*100) : 0;
-      const metrics = [
-        { label: 'WINS', value: wins, sub: '' },
-        { label: 'LOSSES', value: losses, sub: '' },
-        { label: 'WIN RATE', value: winRate + '%', sub: total + ' matches played' },
-        { label: 'WIN STREAK', value: s.currentStreak || 0, sub: 'Best: ' + (s.bestStreak || 0) },
-        { label: 'CARDS KO'D', value: s.koDealt || 0, sub: 'Knockouts dealt' },
-        { label: 'CARDS LOST', value: s.koReceived || 0, sub: 'Your cards KO'd' },
-        { label: 'DMG DEALT', value: s.totalDamageDealt || 0, sub: 'Total damage' },
-        { label: 'DMG HEALED', value: s.totalHealed || 0, sub: 'Total healed' },
-        { label: 'BIGGEST HIT', value: s.biggestHit || 0, sub: 'Single hit record' },
-        { label: 'SHIELDS USED', value: s.shieldsUsed || 0, sub: 'Blocking shields' },
-        { label: 'SKIPS USED', value: s.skipsUsed || 0, sub: 'Skipping shields' },
-        { label: 'TEAM', value: s.teamNumber ? '#' + s.teamNumber : '—', sub: 'FRC Team' },
-      ];
-      const el = document.getElementById('myStatsContent');
-      el.innerHTML = metrics.map(m => `
-        <div class="stat-card">
-          <div class="stat-label">${m.label}</div>
-          <div class="stat-value">${m.value}</div>
-          ${m.sub ? `<div class="stat-sub">${m.sub}</div>` : ''}
-        </div>`).join('');
-    }
-
-    async function loadPlayerLB() {
-      const el = document.getElementById('playerLBContent');
-      el.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-family:Righteous;">Loading...</div>';
-      const snap = await getDocs(collection(db, 'users'));
-      const players = [];
-      snap.forEach(d => {
-        const u = d.data();
-        const wins = u.wins || 0;
-        const losses = u.losses || 0;
-        const total = wins + losses;
-        const wr = total > 0 ? Math.round((wins/total)*100) : 0;
-        players.push({ name: u.firstName || u.username, username: u.username, wins, losses, wr });
-      });
-      players.sort((a,b) => b.wins - a.wins || b.wr - a.wr);
-      el.innerHTML = players.length === 0 ? '<div style="text-align:center;padding:20px;color:#aaa;font-family:Righteous;">No matches played yet!</div>'
-        : players.map((p,i) => {
-          const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-          const isMe = p.username === currentUser.username;
-          return `<div class="lb-row" style="${isMe?'border:2px solid #ff80ab;':''}">
-            <div class="lb-rank ${rankClass}">${medal||('#'+(i+1))}</div>
-            <div style="flex:1">
-              <div class="lb-name">${p.name}${isMe?' (you)':''}</div>
-              <div class="lb-sub">${p.wins}W · ${p.losses}L · ${p.wr}% WR</div>
-            </div>
-            <div class="lb-wins">${p.wins} W</div>
-          </div>`;
-        }).join('');
-    }
-
-    async function loadTeamLB() {
-      const el = document.getElementById('teamLBContent');
-      el.innerHTML = '<div style="text-align:center;padding:20px;color:#aaa;font-family:Righteous;">Loading...</div>';
-      const snap = await getDocs(collection(db, 'users'));
-      const teams = {};
-      snap.forEach(d => {
-        const u = d.data();
-        if (!u.teamNumber) return;
-        const tn = u.teamNumber;
-        if (!teams[tn]) teams[tn] = { wins: 0, losses: 0, members: 0 };
-        teams[tn].wins += (u.wins || 0);
-        teams[tn].losses += (u.losses || 0);
-        teams[tn].members++;
-      });
-      const list = Object.entries(teams).map(([tn, t]) => ({ tn, ...t }));
-      list.sort((a,b) => b.wins - a.wins);
-      el.innerHTML = list.length === 0 ? '<div style="text-align:center;padding:20px;color:#aaa;font-family:Righteous;">No team data yet!</div>'
-        : list.map((t,i) => {
-          const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-          const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-          const myTeam = t.tn == (currentUser.teamNumber || -1);
-          return `<div class="lb-row" style="${myTeam?'border:2px solid #ff80ab;':''}">
-            <div class="lb-rank ${rankClass}">${medal||('#'+(i+1))}</div>
-            <div style="flex:1">
-              <div class="lb-name">Team ${t.tn}</div>
-              <div class="lb-sub">${t.members} player${t.members!==1?'s':''} · ${t.wins}W · ${t.losses}L</div>
-            </div>
-            <div class="lb-wins">${t.wins} W</div>
-          </div>`;
-        }).join('');
-    }
 
     window.doLogout = function() {
       sessionStorage.removeItem('frctcg_user');
@@ -644,7 +524,7 @@
       cards.forEach(card => {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `<div class="checkmark">✓</div><img src="${CARD_LINKS[card.linkIndex - 1] || ''}">`;
+        div.innerHTML = `<div class="checkmark">&#10003;</div><img src="${CARD_LINKS[card.linkIndex - 1] || ''}">`;
         div.onclick = () => toggleSelect(div, card);
         grid.appendChild(div);
       });
@@ -1038,24 +918,6 @@
       const guestAllDead = (isHost ? oppDeck : myDeck).every(c => c.isDead);
       if (hostAllDead) { match.winner = match.guestName; match.status = 'finished'; }
       else if (guestAllDead) { match.winner = match.hostName; match.status = 'finished'; }
-
-      // Track stats after each ability action
-      if (actionData.type === 'ability' && match.status !== 'finished') {
-        const slot = actionData.slot;
-        const type = slot === 1 ? myCard.Type1 : myCard.Type2;
-        const baseDmg = slot === 1 ? myCard.Damage1 : myCard.Damage2;
-        const dmgDealt = (type==='A'||type==='SS') && baseDmg !== 'KILL' ? (Number(baseDmg)||0) : 0;
-        const healAmt = type==='H' ? (Number(myCard.HealthBoost)||0) : 0;
-        if (!match.statsTrack) match.statsTrack = {};
-        const key = currentUser.username;
-        if (!match.statsTrack[key]) match.statsTrack[key] = { dmg:0, heal:0, bigHit:0, shields:0, skips:0, koDealt:0 };
-        match.statsTrack[key].dmg += dmgDealt;
-        if (dmgDealt > (match.statsTrack[key].bigHit||0)) match.statsTrack[key].bigHit = dmgDealt;
-        match.statsTrack[key].heal += healAmt;
-        if (type==='BS') match.statsTrack[key].shields++;
-        if (type==='SS') match.statsTrack[key].skips++;
-        if (oppCard.isDead) match.statsTrack[key].koDealt++;
-      }
 
       if (isHost && match.guestSkipTurn) {
         match.guestSkipTurn = false; match.turn = 'host';
