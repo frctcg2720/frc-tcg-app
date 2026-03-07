@@ -909,7 +909,7 @@
       const theirCards = tradePartnerData.offeredCards;
       if (theirCards.length === 0) {
         document.getElementById('tradeGetRow').innerHTML =
-          '<div style="font-family:Righteous;font-size:13px;color:#aaa;padding:8px;">They haven't offered any cards yet!</div>';
+          '<div style="font-family:Righteous;font-size:13px;color:#aaa;padding:8px;">They haven\'t offered any cards yet!</div>';
       } else {
         document.getElementById('tradeGetRow').innerHTML = theirCards.map((c, i) =>
           `<div class="trade-card-thumb" id="recv-${i}" onclick="toggleReceiveCard(${i})" style="cursor:pointer;opacity:0.5;transition:all 0.15s;">
