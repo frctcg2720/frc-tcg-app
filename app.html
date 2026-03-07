@@ -66,6 +66,7 @@
 
     .card { height: calc(clamp(280px, 52vh, 420px) - 48px); width: auto; aspect-ratio: 2 / 3; background: #f5f5f5; border-radius: 16px; position: relative; cursor: grab; flex-shrink: 0; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: transform 0.15s; }
     .card.dragging { opacity: 0.4; transform: scale(0.95); cursor: grabbing; }
+    .card.drag-ready { cursor: grabbing; outline: 3px solid rgba(255,128,171,0.6); transform: scale(1.02); }
     .card.in-trade { outline: 3px solid #9aff70; }
     body.dark .card.in-trade { outline-color: #5a8d45; }
 
@@ -824,17 +825,32 @@
     let _touchDragCard = null, _touchDragEl = null, _touchClone = null;
 
     function initCardTouchDrag(div, card) {
+      let _touchStartX = 0, _touchStartY = 0, _touchHoldTimer = null, _touchDragActive = false;
       div.addEventListener('touchstart', (e) => {
-        _touchDragCard = card; _touchDragEl = div;
-        const rect = div.getBoundingClientRect();
-        _touchClone = div.cloneNode(true);
-        _touchClone.style.cssText = `position:fixed;width:${rect.width}px;height:${rect.height}px;top:${rect.top}px;left:${rect.left}px;opacity:0.75;pointer-events:none;z-index:9999;border-radius:20px;transition:none;`;
-        document.body.appendChild(_touchClone);
-        div.style.opacity = '0.3';
+        const t = e.touches[0];
+        _touchStartX = t.clientX; _touchStartY = t.clientY;
+        _touchDragActive = false;
+        // only activate drag after 300ms stationary hold
+        _touchHoldTimer = setTimeout(() => {
+          _touchDragActive = true;
+          _touchDragCard = card; _touchDragEl = div;
+          const rect = div.getBoundingClientRect();
+          _touchClone = div.cloneNode(true);
+          _touchClone.style.cssText = `position:fixed;width:${rect.width}px;height:${rect.height}px;top:${rect.top}px;left:${rect.left}px;opacity:0.75;pointer-events:none;z-index:9999;border-radius:20px;transition:none;`;
+          document.body.appendChild(_touchClone);
+          div.style.opacity = '0.3';
+        }, 300);
       }, { passive: true });
       div.addEventListener('touchmove', (e) => {
-        if (!_touchClone) return;
         const t = e.touches[0];
+        const dx = Math.abs(t.clientX - _touchStartX);
+        const dy = Math.abs(t.clientY - _touchStartY);
+        // if finger moved more than 8px before hold timer fires, cancel drag (it's a scroll)
+        if (!_touchDragActive && (dx > 8 || dy > 8)) {
+          clearTimeout(_touchHoldTimer); _touchHoldTimer = null;
+          return;
+        }
+        if (!_touchClone) return;
         _touchClone.style.left = (t.clientX - 100) + 'px';
         _touchClone.style.top = (t.clientY - 140) + 'px';
         const bubble = document.getElementById('tradeBubble');
@@ -842,11 +858,12 @@
         bubble.classList.toggle('drag-over', t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom);
       }, { passive: true });
       div.addEventListener('touchend', (e) => {
+        clearTimeout(_touchHoldTimer);
         if (_touchClone) { _touchClone.remove(); _touchClone = null; }
         if (_touchDragEl) _touchDragEl.style.opacity = '';
         const bubble = document.getElementById('tradeBubble');
         bubble.classList.remove('drag-over');
-        if (!_touchDragCard) return;
+        if (!_touchDragActive || !_touchDragCard) { _touchDragCard = null; _touchDragEl = null; _touchDragActive = false; return; }
         const t = e.changedTouches[0];
         const br = bubble.getBoundingClientRect();
         if (t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom) {
@@ -856,7 +873,7 @@
             updateTradeBubble(); loadBinder();
           }
         }
-        _touchDragCard = null; _touchDragEl = null;
+        _touchDragCard = null; _touchDragEl = null; _touchDragActive = false;
       }, { passive: true });
     }
 
@@ -1161,14 +1178,34 @@
         div.className = 'card';
         if (tradeCards.find(c => c.linkIndex === card.linkIndex)) div.classList.add('in-trade');
         div.innerHTML = `<div class="checkmark">&#10003;</div><img src="${CARD_LINKS[card.linkIndex - 1] || ''}">`;
-        div.draggable = true;
+        div.draggable = false;
+        let _holdTimer = null;
         div.onclick = () => toggleSelect(div, card);
+        div.addEventListener('mousedown', () => {
+          _holdTimer = setTimeout(() => {
+            div.draggable = true;
+            div.classList.add('drag-ready');
+          }, 300);
+        });
+        div.addEventListener('mouseup', () => {
+          clearTimeout(_holdTimer);
+          // reset after a tick so dragstart can still fire if it was triggered
+          setTimeout(() => { div.draggable = false; div.classList.remove('drag-ready'); }, 50);
+        });
+        div.addEventListener('mouseleave', () => {
+          clearTimeout(_holdTimer);
+        });
         div.addEventListener('dragstart', (e) => {
+          if (!div.draggable) { e.preventDefault(); return; }
           div.classList.add('dragging');
           e.dataTransfer.setData('linkIndex', card.linkIndex);
           e.dataTransfer.setData('cardName', card.name || CARD_NAMES[card.linkIndex - 1]);
         });
-        div.addEventListener('dragend', () => div.classList.remove('dragging'));
+        div.addEventListener('dragend', () => {
+          div.draggable = false;
+          div.classList.remove('dragging');
+          div.classList.remove('drag-ready');
+        });
         initCardTouchDrag(div, card);
         grid.appendChild(div);
       });
