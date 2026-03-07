@@ -962,12 +962,48 @@
         btn.textContent = 'Request Sent! ✓';
         tradeCards = [];
         updateTradeBubble();
+        watchTradeRequest(reqId);
         setTimeout(() => { closeTradePanel(); loadBinder(); btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto'; }, 1500);
       } catch(e) {
         console.error(e); alert('Failed to send. Try again!');
         btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto';
       }
     };
+
+    // ── Poll the sent request so P1 sees when P2 accepts/declines ──
+    let _tradeWatchInterval = null;
+    function watchTradeRequest(reqId) {
+      if (_tradeWatchInterval) clearInterval(_tradeWatchInterval);
+      _tradeWatchInterval = setInterval(async () => {
+        try {
+          const snap = await getDoc(doc(db, 'tradeRequests', reqId));
+          if (!snap.exists()) { clearInterval(_tradeWatchInterval); return; }
+          const status = snap.data().status;
+          if (status === 'accepted') {
+            clearInterval(_tradeWatchInterval);
+            showTradeToast('✅ Trade accepted! Your binder has been updated.');
+            loadBinder();
+          } else if (status === 'declined') {
+            clearInterval(_tradeWatchInterval);
+            showTradeToast('❌ Trade was declined.');
+          }
+        } catch(e) { /* silently retry */ }
+      }, 4000);
+    }
+
+    function showTradeToast(msg) {
+      let toast = document.getElementById('tradeToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'tradeToast';
+        toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#2a2a2a;color:white;font-family:Righteous;font-size:15px;padding:14px 24px;border-radius:20px;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:opacity 0.4s;white-space:nowrap;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 4000);
+    }
 
     // ── Step 3: view incoming requests ──
     window.openTradeRequests = async function() {
