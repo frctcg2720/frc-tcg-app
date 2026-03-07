@@ -673,6 +673,24 @@
       const snap = await getDocs(collection(db, 'users', currentUser.username, 'binder'));
       const cards = [];
       snap.forEach(d => cards.push({ id: d.id, ...d.data() }));
+
+      // Auto-gift 3 random cards to team 2720 players (or accounts with no team) if binder is empty
+      const userTeam = currentUser.teamNumber || 2720;
+      if (cards.length === 0 && String(userTeam) === '2720') {
+        const totalCards = CARD_NAMES.length; // 102
+        const picked = [];
+        while (picked.length < 3) {
+          const idx = Math.floor(Math.random() * totalCards);
+          if (!picked.includes(idx)) picked.push(idx);
+        }
+        for (const idx of picked) {
+          const linkIndex = idx + 1;
+          const cardData = { name: CARD_NAMES[idx], linkIndex, addedAt: new Date().toISOString() };
+          await setDoc(doc(db, 'users', currentUser.username, 'binder', linkIndex.toString()), cardData);
+          cards.push(cardData);
+        }
+      }
+
       renderBinder(cards);
     }
 
