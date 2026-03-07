@@ -163,6 +163,10 @@
     .stats-scroll { background: #eeeeee; overflow-y: auto; overflow-x: hidden; flex-direction: column; }
     body.dark .stats-scroll { background: #1a1a1a; }
     .stats-topbar { display: flex; align-items: center; gap: 14px; padding: 18px 5%; flex-shrink: 0; }
+    .stats-back-btn { width: 44px; height: 44px; border-radius: 50%; background: #ff80ab; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; }
+    body.dark .stats-back-btn { background: #6b396a; }
+    .hat-badge { font-size: 11px; background: #ff80ab; color: white; border-radius: 8px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+    body.dark .hat-badge { background: #6b396a; }
     .stats-topbar span { font-family: Righteous; font-size: 22px; color: #ff8a80; }
     body.dark .stats-topbar span { color: #884747; }
     .stats-body { padding: 0 5% 40px; max-width: 600px; width: 100%; margin: 0 auto; }
@@ -343,7 +347,7 @@
   <div id="screen-stats" class="game-screen stats-scroll" style="overflow-y:auto;">
     <!-- sticky back header -->
     <div class="stats-topbar">
-      <div class="profile-circle" onclick="switchScreen('screen-binder')" style="background:#ff80ab;">
+      <div class="stats-back-btn" onclick="switchScreen('screen-binder')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
       </div>
       <span>Stats &amp; Leaderboard</span>
@@ -633,7 +637,7 @@
             ? ' onclick="showHatTrickInfo()" style="cursor:pointer;"'
             : '';
           const badge = t.tooltip
-            ? '<span style="font-size:11px;background:#ff80ab;color:white;border-radius:8px;padding:1px 6px;margin-left:6px;vertical-align:middle;">?</span>'
+            ? '<span class="hat-badge">?</span>'
             : '';
           return '<div class="stat-tile' + (t.wide ? ' stat-tile-wide' : '') + '"' + extra + '>'
             + '<div class="stat-tile-label">' + t.label + badge + '</div>'
