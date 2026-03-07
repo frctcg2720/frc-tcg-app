@@ -960,7 +960,9 @@
           createdAt: Date.now()
         });
         btn.textContent = 'Request Sent! ✓';
-        setTimeout(() => { closeTradePanel(); btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto'; }, 1500);
+        tradeCards = [];
+        updateTradeBubble();
+        setTimeout(() => { closeTradePanel(); loadBinder(); btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto'; }, 1500);
       } catch(e) {
         console.error(e); alert('Failed to send. Try again!');
         btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto';
