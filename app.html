@@ -108,6 +108,12 @@
     body.dark .trade-confirm-box { background: #1e2e1a; border-color: #5a8d45; }
     body.dark .trade-confirm-row { color: #ddd; }
     body.dark .trade-confirm-arrow { color: #5a8d45; }
+    .trade-btn-requests { background: #e8f5e9; color: #2a6020; border: 2px solid #9aff70; }
+    body.dark .trade-btn-requests { background: #1a2e1a; color: #9aff70; border-color: #5a8d45; }
+    .trade-request-card { background: #f5fff0; border: 2px solid #9aff70; border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+    body.dark .trade-request-card { background: #1a2e1a; border-color: #5a8d45; }
+    .trade-request-from { font-family: Righteous; font-size: 14px; color: #555; margin-bottom: 4px; }
+    body.dark .trade-request-from { color: #aaa; }
     .card img { width: 100%; height: 100%; object-fit: contain; background: #222; }
     .checkmark { position: absolute; top: 15px; right: 15px; width: 40px; height: 40px; background: #ff80ab; border-radius: 50%; display: none; color: white; text-align: center; line-height: 40px; font-size: 24px; z-index: 5; }
     .card.selected .checkmark { display: block; }
@@ -330,29 +336,35 @@
   <div class="trade-overlay" id="tradeOverlay" onclick="closeTradePanel()">
     <div class="trade-panel" onclick="event.stopPropagation()">
 
-      <!-- STEP 1: pick cards + username -->
+      <!-- STEP 1: your offering + find partner -->
       <div id="tradeStep1">
         <h2>Trade Cards</h2>
-        <div class="trade-panel-sub">Drag cards into the bubble, then enter who to trade with</div>
+        <div class="trade-panel-sub">Drag cards to the bubble to offer them, then find a player</div>
         <div class="trade-section-label">YOU ARE OFFERING:</div>
         <div class="trade-cards-row" id="tradeCardsRow"></div>
+        <div class="trade-btn trade-btn-requests" onclick="openTradeRequests()" style="margin-bottom:10px;">📬 View Trade Requests</div>
         <input class="trade-input" id="tradeUsername" placeholder="Enter their username..." autocomplete="off" />
         <div class="trade-btn trade-btn-green" onclick="lookupTradePartner()">Look Up Player</div>
         <div class="trade-btn trade-btn-cancel" onclick="closeTradePanel()">Cancel</div>
       </div>
 
-      <!-- STEP 2: confirm -->
+      <!-- STEP 2: pick from their offered cards -->
       <div id="tradeStep2" style="display:none;">
-        <h2>Confirm Trade?</h2>
+        <h2>Pick What You Want</h2>
         <div class="trade-panel-sub" id="tradeWithLabel"></div>
-        <div class="trade-confirm-box">
-          <div class="trade-section-label">YOU GIVE:</div>
-          <div class="trade-cards-row" id="tradeGiveRow"></div>
-          <div style="text-align:center; font-size:28px; margin:4px 0;">&#8595;</div>
-          <div class="trade-section-label">YOU RECEIVE:</div>
-          <div class="trade-cards-row" id="tradeGetRow"></div>
-        </div>
-        <div class="trade-btn trade-btn-green" onclick="confirmTrade()">Confirm Trade</div>
+        <div class="trade-section-label">THEY ARE OFFERING:</div>
+        <div class="trade-cards-row" id="tradeGetRow" style="margin-bottom:16px;"></div>
+        <div class="trade-section-label">YOU ARE GIVING:</div>
+        <div class="trade-cards-row" id="tradeGiveRow" style="margin-bottom:16px;"></div>
+        <div class="trade-btn trade-btn-green" onclick="sendTradeRequest()">Send Trade Request</div>
+        <div class="trade-btn trade-btn-cancel" onclick="backToStep1()">&#8592; Back</div>
+      </div>
+
+      <!-- STEP 3: requests inbox -->
+      <div id="tradeStep3" style="display:none;">
+        <h2>📬 Trade Requests</h2>
+        <div class="trade-panel-sub">Incoming requests from other players</div>
+        <div id="tradeRequestsList"></div>
         <div class="trade-btn trade-btn-cancel" onclick="backToStep1()">&#8592; Back</div>
       </div>
 
@@ -754,8 +766,8 @@
 
 
     // ── TRADING ──
-    let tradeCards = []; // cards being offered
-    let tradePartnerData = null; // { username, firstName, binder: [] }
+    let tradeCards = []; // cards this player is offering
+    let tradePartnerData = null;
 
     function updateTradeBubble() {
       const bubble = document.getElementById('tradeBubble');
@@ -767,37 +779,42 @@
         bubble.classList.add('has-cards');
         count.textContent = tradeCards.length;
       }
+      // Save offered cards to Firestore so others can see them
+      saveMyTradeOffer();
     }
 
-    // Touch drag support for mobile
-    let _touchDragCard = null;
-    let _touchDragEl = null;
-    let _touchClone = null;
+    async function saveMyTradeOffer() {
+      try {
+        await setDoc(doc(db, 'tradeOffers', currentUser.username), {
+          username: currentUser.username,
+          firstName: currentUser.firstName || currentUser.username,
+          cards: tradeCards,
+          updatedAt: Date.now()
+        });
+      } catch(e) { console.error('saveMyTradeOffer:', e); }
+    }
+
+    // ── Touch drag ──
+    let _touchDragCard = null, _touchDragEl = null, _touchClone = null;
 
     function initCardTouchDrag(div, card) {
       div.addEventListener('touchstart', (e) => {
-        _touchDragCard = card;
-        _touchDragEl = div;
-        // create floating clone
+        _touchDragCard = card; _touchDragEl = div;
         const rect = div.getBoundingClientRect();
         _touchClone = div.cloneNode(true);
         _touchClone.style.cssText = `position:fixed;width:${rect.width}px;height:${rect.height}px;top:${rect.top}px;left:${rect.left}px;opacity:0.75;pointer-events:none;z-index:9999;border-radius:20px;transition:none;`;
         document.body.appendChild(_touchClone);
         div.style.opacity = '0.3';
       }, { passive: true });
-
       div.addEventListener('touchmove', (e) => {
         if (!_touchClone) return;
         const t = e.touches[0];
         _touchClone.style.left = (t.clientX - 100) + 'px';
         _touchClone.style.top = (t.clientY - 140) + 'px';
-        // highlight bubble if hovering over it
         const bubble = document.getElementById('tradeBubble');
         const br = bubble.getBoundingClientRect();
-        const over = t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom;
-        bubble.classList.toggle('drag-over', over);
+        bubble.classList.toggle('drag-over', t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom);
       }, { passive: true });
-
       div.addEventListener('touchend', (e) => {
         if (_touchClone) { _touchClone.remove(); _touchClone = null; }
         if (_touchDragEl) _touchDragEl.style.opacity = '';
@@ -806,13 +823,11 @@
         if (!_touchDragCard) return;
         const t = e.changedTouches[0];
         const br = bubble.getBoundingClientRect();
-        const dropped = t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom;
-        if (dropped) {
+        if (t.clientX >= br.left && t.clientX <= br.right && t.clientY >= br.top && t.clientY <= br.bottom) {
           const c = _touchDragCard;
           if (!tradeCards.find(x => x.linkIndex === c.linkIndex)) {
             tradeCards.push({ linkIndex: c.linkIndex, name: c.name || CARD_NAMES[c.linkIndex - 1] });
-            updateTradeBubble();
-            loadBinder();
+            updateTradeBubble(); loadBinder();
           }
         }
         _touchDragCard = null; _touchDragEl = null;
@@ -824,18 +839,16 @@
       document.getElementById('tradeBubble').classList.remove('drag-over');
       const linkIndex = parseInt(e.dataTransfer.getData('linkIndex'));
       const cardName = e.dataTransfer.getData('cardName');
-      if (!linkIndex) return;
-      if (tradeCards.find(c => c.linkIndex === linkIndex)) return; // already added
+      if (!linkIndex || tradeCards.find(c => c.linkIndex === linkIndex)) return;
       tradeCards.push({ linkIndex, name: cardName });
-      updateTradeBubble();
-      // re-render binder to show green outline
-      loadBinder();
+      updateTradeBubble(); loadBinder();
     };
 
     window.openTradePanel = function() {
-      if (tradeCards.length === 0) return; // nothing to trade yet
+      if (tradeCards.length === 0) return;
       document.getElementById('tradeStep1').style.display = 'block';
       document.getElementById('tradeStep2').style.display = 'none';
+      document.getElementById('tradeStep3').style.display = 'none';
       document.getElementById('tradeUsername').value = '';
       tradePartnerData = null;
       renderTradeCardsRow();
@@ -847,8 +860,7 @@
     };
 
     function renderTradeCardsRow() {
-      const row = document.getElementById('tradeCardsRow');
-      row.innerHTML = tradeCards.map((c, i) =>
+      document.getElementById('tradeCardsRow').innerHTML = tradeCards.map((c, i) =>
         `<div class="trade-card-thumb">
           <img src="${CARD_LINKS[c.linkIndex - 1]}">
           <div class="trade-card-remove" onclick="removeTradeCard(${i})">&#10005;</div>
@@ -858,119 +870,185 @@
 
     window.removeTradeCard = function(i) {
       tradeCards.splice(i, 1);
-      updateTradeBubble();
-      renderTradeCardsRow();
+      updateTradeBubble(); renderTradeCardsRow();
       if (tradeCards.length === 0) closeTradePanel();
       loadBinder();
-    };
-
-    window.lookupTradePartner = async function() {
-      const username = document.getElementById('tradeUsername').value.trim().toLowerCase();
-      if (!username) return alert('Enter a username!');
-      if (username === currentUser.username) return alert("You can\'t trade with yourself!");
-      try {
-        const snap = await getDoc(doc(db, 'users', username));
-        if (!snap.exists()) { alert('User not found!'); return; }
-        const ud = snap.data();
-        // Get their binder
-        const binderSnap = await getDocs(collection(db, 'users', username, 'binder'));
-        const theirBinder = [];
-        binderSnap.forEach(d => theirBinder.push({ id: d.id, ...d.data() }));
-        tradePartnerData = { username, firstName: ud.firstName || username, binder: theirBinder };
-        showTradeStep2();
-      } catch(e) { alert('Could not find user. Check the username!'); }
-    };
-
-    function showTradeStep2() {
-      document.getElementById('tradeStep1').style.display = 'none';
-      document.getElementById('tradeStep2').style.display = 'block';
-      document.getElementById('tradeWithLabel').textContent = 'Trading with ' + tradePartnerData.firstName + ' (@' + tradePartnerData.username + ')';
-
-      // Show what you give
-      document.getElementById('tradeGiveRow').innerHTML = tradeCards.map(c =>
-        `<div class="trade-card-thumb"><img src="${CARD_LINKS[c.linkIndex - 1]}"><div style="font-family:Righteous;font-size:9px;text-align:center;padding:2px;background:rgba(0,0,0,0.5);color:white;">${c.name}</div></div>`
-      ).join('');
-
-      // Show what you get (their whole binder to pick from... or show placeholder)
-      if (tradePartnerData.binder.length === 0) {
-        document.getElementById('tradeGetRow').innerHTML = '<div style="font-family:Righteous;font-size:13px;color:#aaa;">Their binder is empty!</div>';
-      } else {
-        // For simplicity: show all their cards as selectable — highlighted = selected to receive
-        document.getElementById('tradeGetRow').innerHTML = tradePartnerData.binder.map((c, i) =>
-          `<div class="trade-card-thumb" id="recv-${i}" onclick="toggleReceiveCard(${i})" style="cursor:pointer;opacity:0.5;transition:all 0.15s;">
-            <img src="${CARD_LINKS[c.linkIndex - 1]}">
-          </div>`
-        ).join('') + '<div style="font-family:Righteous;font-size:11px;color:#aaa;width:100%;margin-top:4px;">Tap cards above to select what you want</div>';
-      }
-      window._selectedReceive = [];
-    }
-
-    window.toggleReceiveCard = function(i) {
-      const el = document.getElementById('recv-' + i);
-      const card = tradePartnerData.binder[i];
-      const idx = window._selectedReceive.findIndex(c => c.linkIndex === card.linkIndex);
-      if (idx === -1) {
-        window._selectedReceive.push(card);
-        el.style.opacity = '1';
-        el.style.outline = '3px solid #9aff70';
-        el.style.borderRadius = '10px';
-      } else {
-        window._selectedReceive.splice(idx, 1);
-        el.style.opacity = '0.5';
-        el.style.outline = 'none';
-      }
     };
 
     window.backToStep1 = function() {
       document.getElementById('tradeStep1').style.display = 'block';
       document.getElementById('tradeStep2').style.display = 'none';
+      document.getElementById('tradeStep3').style.display = 'none';
     };
 
-    window.confirmTrade = async function() {
-      if (!tradePartnerData) return;
-      const receiving = window._selectedReceive || [];
-      if (receiving.length === 0) { alert('Select at least one card to receive!'); return; }
-
-      const btn = document.querySelector('#tradeStep2 .trade-btn-green');
-      btn.textContent = 'Processing...';
-      btn.style.pointerEvents = 'none';
-
+    // ── Step 1 → 2: look up partner, show their offered cards ──
+    window.lookupTradePartner = async function() {
+      const username = document.getElementById('tradeUsername').value.trim().toLowerCase();
+      if (!username) return alert('Enter a username!');
+      if (username === currentUser.username) return alert("You can't trade with yourself!");
       try {
-        // Remove offered cards from my binder
-        for (const c of tradeCards) {
-          await deleteDoc(doc(db, 'users', currentUser.username, 'binder', c.linkIndex.toString()));
-        }
-        // Add their cards to my binder
-        for (const c of receiving) {
-          await setDoc(doc(db, 'users', currentUser.username, 'binder', c.linkIndex.toString()), {
-            name: c.name || CARD_NAMES[c.linkIndex - 1], linkIndex: c.linkIndex, addedAt: new Date().toISOString()
-          });
-        }
-        // Remove received cards from their binder
-        for (const c of receiving) {
-          await deleteDoc(doc(db, 'users', tradePartnerData.username, 'binder', c.linkIndex.toString()));
-        }
-        // Add offered cards to their binder
-        for (const c of tradeCards) {
-          await setDoc(doc(db, 'users', tradePartnerData.username, 'binder', c.linkIndex.toString()), {
-            name: c.name || CARD_NAMES[c.linkIndex - 1], linkIndex: c.linkIndex, addedAt: new Date().toISOString()
-          });
-        }
+        const userSnap = await getDoc(doc(db, 'users', username));
+        if (!userSnap.exists()) { alert('User not found!'); return; }
+        const ud = userSnap.data();
+        // Fetch their trade offer
+        const offerSnap = await getDoc(doc(db, 'tradeOffers', username));
+        const theirOffer = offerSnap.exists() ? (offerSnap.data().cards || []) : [];
+        tradePartnerData = { username, firstName: ud.firstName || username, offeredCards: theirOffer };
+        showTradeStep2();
+      } catch(e) { console.error(e); alert('Could not find user. Check the username!'); }
+    };
 
-        tradeCards = [];
-        window._selectedReceive = [];
-        tradePartnerData = null;
-        updateTradeBubble();
-        closeTradePanel();
-        loadBinder();
-        alert('Trade complete!');
-      } catch(e) {
-        console.error(e);
-        alert('Trade failed. Try again!');
-        btn.textContent = 'Confirm Trade';
-        btn.style.pointerEvents = 'auto';
+    function showTradeStep2() {
+      document.getElementById('tradeStep1').style.display = 'none';
+      document.getElementById('tradeStep2').style.display = 'block';
+      document.getElementById('tradeWithLabel').textContent =
+        tradePartnerData.firstName + ' (@' + tradePartnerData.username + ') is offering:';
+
+      // Their offered cards — tap to select
+      window._selectedReceive = [];
+      const theirCards = tradePartnerData.offeredCards;
+      if (theirCards.length === 0) {
+        document.getElementById('tradeGetRow').innerHTML =
+          '<div style="font-family:Righteous;font-size:13px;color:#aaa;padding:8px;">They haven't offered any cards yet!</div>';
+      } else {
+        document.getElementById('tradeGetRow').innerHTML = theirCards.map((c, i) =>
+          `<div class="trade-card-thumb" id="recv-${i}" onclick="toggleReceiveCard(${i})" style="cursor:pointer;opacity:0.5;transition:all 0.15s;">
+            <img src="${CARD_LINKS[c.linkIndex - 1]}">
+            <div style="font-family:Righteous;font-size:9px;text-align:center;padding:2px;background:rgba(0,0,0,0.6);color:white;position:absolute;bottom:0;width:100%;">${c.name||''}</div>
+          </div>`
+        ).join('') + '<div style="font-family:Righteous;font-size:11px;color:#aaa;width:100%;margin-top:6px;">Tap to select cards you want</div>';
+      }
+
+      // What you're giving
+      document.getElementById('tradeGiveRow').innerHTML = tradeCards.map(c =>
+        `<div class="trade-card-thumb">
+          <img src="${CARD_LINKS[c.linkIndex - 1]}">
+          <div style="font-family:Righteous;font-size:9px;text-align:center;padding:2px;background:rgba(0,0,0,0.6);color:white;position:absolute;bottom:0;width:100%;">${c.name||''}</div>
+        </div>`
+      ).join('');
+    }
+
+    window.toggleReceiveCard = function(i) {
+      const el = document.getElementById('recv-' + i);
+      const card = tradePartnerData.offeredCards[i];
+      const idx = window._selectedReceive.findIndex(c => c.linkIndex === card.linkIndex);
+      if (idx === -1) {
+        window._selectedReceive.push(card);
+        el.style.opacity = '1'; el.style.outline = '3px solid #9aff70'; el.style.borderRadius = '10px';
+      } else {
+        window._selectedReceive.splice(idx, 1);
+        el.style.opacity = '0.5'; el.style.outline = 'none';
       }
     };
+
+    // ── Send trade request to Firestore ──
+    window.sendTradeRequest = async function() {
+      const receiving = window._selectedReceive || [];
+      if (receiving.length === 0) { alert('Tap at least one card you want!'); return; }
+      const btn = document.querySelector('#tradeStep2 .trade-btn-green');
+      btn.textContent = 'Sending...'; btn.style.pointerEvents = 'none';
+      try {
+        const reqId = currentUser.username + '_' + Date.now();
+        await setDoc(doc(db, 'tradeRequests', reqId), {
+          id: reqId,
+          fromUsername: currentUser.username,
+          fromFirstName: currentUser.firstName || currentUser.username,
+          toUsername: tradePartnerData.username,
+          offering: tradeCards,       // what sender gives
+          requesting: receiving,      // what sender wants (from receiver's offer)
+          status: 'pending',
+          createdAt: Date.now()
+        });
+        btn.textContent = 'Request Sent! ✓';
+        setTimeout(() => { closeTradePanel(); btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto'; }, 1500);
+      } catch(e) {
+        console.error(e); alert('Failed to send. Try again!');
+        btn.textContent = 'Send Trade Request'; btn.style.pointerEvents = 'auto';
+      }
+    };
+
+    // ── Step 3: view incoming requests ──
+    window.openTradeRequests = async function() {
+      document.getElementById('tradeStep1').style.display = 'none';
+      document.getElementById('tradeStep3').style.display = 'block';
+      const listEl = document.getElementById('tradeRequestsList');
+      listEl.innerHTML = '<div style="font-family:Righteous;color:#aaa;padding:12px;">Loading...</div>';
+      try {
+        const snap = await getDocs(collection(db, 'tradeRequests'));
+        const requests = [];
+        snap.forEach(d => {
+          const r = d.data();
+          if (r.toUsername === currentUser.username && r.status === 'pending') requests.push(r);
+        });
+        if (requests.length === 0) {
+          listEl.innerHTML = '<div style="font-family:Righteous;color:#aaa;padding:12px;text-align:center;">No pending requests!</div>';
+          return;
+        }
+        listEl.innerHTML = requests.map(r => `
+          <div class="trade-request-card" id="req-${r.id}">
+            <div class="trade-request-from">From <strong>${r.fromFirstName}</strong> (@${r.fromUsername})</div>
+            <div style="display:flex;gap:16px;align-items:center;margin:10px 0;">
+              <div>
+                <div class="trade-section-label">THEY GIVE YOU:</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  ${r.offering.map(c => `<div class="trade-card-thumb"><img src="${CARD_LINKS[c.linkIndex-1]}"></div>`).join('')}
+                </div>
+              </div>
+              <div style="font-size:24px;">⇄</div>
+              <div>
+                <div class="trade-section-label">THEY WANT:</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  ${r.requesting.map(c => `<div class="trade-card-thumb"><img src="${CARD_LINKS[c.linkIndex-1]}"></div>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <div class="trade-btn trade-btn-green" style="flex:1;padding:10px;font-size:15px;" onclick="acceptTradeRequest('${r.id}')">Accept</div>
+              <div class="trade-btn trade-btn-cancel" style="flex:1;padding:10px;font-size:15px;" onclick="declineTradeRequest('${r.id}')">Decline</div>
+            </div>
+          </div>`
+        ).join('');
+      } catch(e) { listEl.innerHTML = '<div style="font-family:Righteous;color:#aaa;padding:12px;">Could not load requests.</div>'; }
+    };
+
+    window.acceptTradeRequest = async function(reqId) {
+      const el = document.getElementById('req-' + reqId);
+      if (el) el.style.opacity = '0.5';
+      try {
+        const reqSnap = await getDoc(doc(db, 'tradeRequests', reqId));
+        if (!reqSnap.exists()) { alert('Request no longer exists!'); return; }
+        const r = reqSnap.data();
+        // Move cards: sender gets r.offering cards removed + r.requesting added; receiver vice versa
+        for (const c of r.offering)
+          await deleteDoc(doc(db, 'users', r.fromUsername, 'binder', c.linkIndex.toString()));
+        for (const c of r.requesting)
+          await deleteDoc(doc(db, 'users', currentUser.username, 'binder', c.linkIndex.toString()));
+        for (const c of r.requesting)
+          await setDoc(doc(db, 'users', r.fromUsername, 'binder', c.linkIndex.toString()),
+            { name: c.name || CARD_NAMES[c.linkIndex-1], linkIndex: c.linkIndex, addedAt: new Date().toISOString() });
+        for (const c of r.offering)
+          await setDoc(doc(db, 'users', currentUser.username, 'binder', c.linkIndex.toString()),
+            { name: c.name || CARD_NAMES[c.linkIndex-1], linkIndex: c.linkIndex, addedAt: new Date().toISOString() });
+        // Mark request done + clear both offers
+        await updateDoc(doc(db, 'tradeRequests', reqId), { status: 'accepted' });
+        await deleteDoc(doc(db, 'tradeOffers', r.fromUsername));
+        await deleteDoc(doc(db, 'tradeOffers', currentUser.username));
+        tradeCards = []; updateTradeBubble();
+        closeTradePanel(); loadBinder();
+        alert('Trade accepted! ✓');
+      } catch(e) { console.error(e); alert('Trade failed. Try again!'); if (el) el.style.opacity = '1'; }
+    };
+
+    window.declineTradeRequest = async function(reqId) {
+      try {
+        await updateDoc(doc(db, 'tradeRequests', reqId), { status: 'declined' });
+        document.getElementById('req-' + reqId)?.remove();
+        const listEl = document.getElementById('tradeRequestsList');
+        if (!listEl.querySelector('.trade-request-card'))
+          listEl.innerHTML = '<div style="font-family:Righteous;color:#aaa;padding:12px;text-align:center;">No pending requests!</div>';
+      } catch(e) { alert('Could not decline. Try again!'); }
+    };
+
 
     window.doLogout = function() {
       sessionStorage.removeItem('frctcg_user');
