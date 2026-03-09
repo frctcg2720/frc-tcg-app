@@ -1508,7 +1508,7 @@
     window.useAbility = function(num, event) {
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
       event.currentTarget.classList.add('lit');
-      selectedAbility = num;
+      selectedAbility = parseInt(num);
     };
     window.skipTurn = function(event) {
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
