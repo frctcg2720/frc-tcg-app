@@ -1506,11 +1506,9 @@
     };
 
     window.useAbility = function(num, event) {
-      console.log('useAbility called, num=', num, typeof num);
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
       event.currentTarget.classList.add('lit');
       selectedAbility = parseInt(num);
-      console.log('selectedAbility set to', selectedAbility, typeof selectedAbility);
     };
     window.skipTurn = function(event) {
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
@@ -1535,12 +1533,11 @@
       document.getElementById('confirmSwapBtn').style.display = 'none'; document.getElementById('actionBtn').style.display = 'block'; document.getElementById('mySide').style.display = 'flex';
     };
     window.confirmAndEndTurn = async function() {
-      console.log('confirmAndEndTurn fired, selectedAbility=', selectedAbility, typeof selectedAbility);
       const btn = document.getElementById('finalConfirmBtn'); btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
       let actionData = {};
       if (selectedAbility === 'skip') actionData = { type: 'skip' };
       else if (selectedAbility === 1 || selectedAbility === 2) actionData = { type: 'ability', slot: selectedAbility };
-      else { console.log('EARLY RETURN - selectedAbility was:', selectedAbility, typeof selectedAbility); btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
+      else { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
       await processTurn(actionData);
       btn.style.pointerEvents = 'auto'; btn.style.opacity = '1';
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
@@ -1594,13 +1591,21 @@
               if (baseDmg === 'KILL') { dmg = 9999; }
               else {
                 dmg = Number(baseDmg) || 0;
-                if (slot === 1 && myCard.linkIndex === 29) dmg += (myCard.p1Used) * 10;
+                const timesUsed = slot === 1 ? myCard.p1Used : myCard.p2Used;
+                // Card 29: +10 per use; all other cards: use generic DamageIncreasePerUse field
+                if (slot === 1 && myCard.linkIndex === 29) { dmg += timesUsed * 10; }
+                else { const scaling = (slot === 1 ? myCard.DamageIncreasePerUse1 : myCard.DamageIncreasePerUse2) || 0; dmg += timesUsed * scaling; }
                 dmg += myCard.nextAttackBonus || 0;
                 if (myCard.nextAttackPercentBonus > 0) dmg = dmg * (1 + myCard.nextAttackPercentBonus / 100);
                 if (dmg > 0 && myCard.boostedAttacksRemaining > 0) { myCard.boostedAttacksRemaining--; if (myCard.boostedAttacksRemaining === 0) { myCard.nextAttackBonus = 0; myCard.nextAttackPercentBonus = 0; } }
                 else if (dmg > 0) { myCard.nextAttackBonus = 0; myCard.nextAttackPercentBonus = 0; }
-                dmg -= (oppCard.activeShield || 0); if (dmg < 0) dmg = 0;
-                if (oppCard.activeShieldPercent > 0) dmg = dmg * (1 - oppCard.activeShieldPercent / 100);
+                // SkipShields: some cards bypass opponent shields entirely
+                if (!myCard.SkipShields) {
+                  let blockFlat = oppCard.activeShield || 0;
+                  if ((myCard.ReduceOppShieldPercent || 0) > 0) blockFlat = blockFlat * (1 - myCard.ReduceOppShieldPercent / 100);
+                  dmg -= blockFlat; if (dmg < 0) dmg = 0;
+                  if (oppCard.activeShieldPercent > 0) dmg = dmg * (1 - oppCard.activeShieldPercent / 100);
+                }
               }
               oppCard.currentHP -= Math.floor(dmg); if (oppCard.currentHP <= 0) { oppCard.currentHP = 0; oppCard.isDead = true; }
               if (oppCard.shieldTurnsRemaining > 0) { oppCard.shieldTurnsRemaining--; if (oppCard.shieldTurnsRemaining === 0) { oppCard.activeShield = 0; oppCard.activeShieldPercent = 0; } }
@@ -1608,12 +1613,17 @@
             }
             if (type === 'H') {
               let healAmt = myCard.HealthBoost === 'FULL' ? (myCard.maxHP - myCard.currentHP) : (Number(myCard.HealthBoost) || 0);
-              if (myCard.HealthBoostPercent > 0) healAmt += myCard.currentHP * (myCard.HealthBoostPercent / 100);
-              if (WHOLE_TEAM.includes(myCard.linkIndex)) { myDeck.forEach(c => { if (!c.isDead) c.currentHP += healAmt; }); }
+              if ((myCard.HealthBoostPercent || 0) > 0) healAmt += myCard.currentHP * (myCard.HealthBoostPercent / 100);
+              // Card 88: also heal Darshil to full if in deck
+              if (myCard.linkIndex === 88) { const d = myDeck.find(c => c.name && c.name.toLowerCase().includes('darshil')); if (d && !d.isDead) d.currentHP = d.maxHP; }
+              if (WHOLE_TEAM.includes(myCard.linkIndex)) { myDeck.forEach(c => { if (!c.isDead) { let ha = healAmt; if ((myCard.HealthBoostPercent||0) > 0) { ha = (Number(myCard.HealthBoost)||0) + c.currentHP * (myCard.HealthBoostPercent/100); } c.currentHP += ha; } }); }
               else { myCard.currentHP += healAmt; }
             }
             if (type === 'BS') { myCard.activeShield = myCard.Blockdmg || 0; myCard.activeShieldPercent = myCard.BockPercent || 0; myCard.shieldTurnsRemaining = myCard.Lasts || 1; }
             if (type === 'SS') { myCard.ssUsed = true; if (isHost) match.guestSkipTurn = true; else match.hostSkipTurn = true; }
+            // Generic next-attack bonus fields
+            if ((myCard.Damageaddedtonextattck || 0) > 0) myCard.nextAttackBonus = myCard.Damageaddedtonextattck;
+            if ((myCard.PercentDamageAddedToNextAttack || 0) > 0) myCard.nextAttackPercentBonus = myCard.PercentDamageAddedToNextAttack;
             if (DOUBLE_DMG.includes(myCard.linkIndex) && (Number(baseDmg)||0) === 0 && (type==='A'||type==='SS')) myCard.nextAttackPercentBonus = 100;
             if (slot===1 && myCard.linkIndex===50 && (Number(baseDmg)||0)===0 && (type==='A'||type==='SS')) myCard.nextAttackPercentBonus = 50;
             if (slot===1 && myCard.linkIndex===21 && (Number(baseDmg)||0)===0 && (type==='A'||type==='SS')) myCard.nextAttackBonus = 30;
@@ -1628,12 +1638,10 @@
         const key = currentUser.username;
         if (!match.statTrack[key]) match.statTrack[key] = { dmg:0, heal:0, ko:0, cardUse:{} };
         const t = match.statTrack[key];
-        // damage dealt this move
-        if ((type === 'A' || type === 'SS') && oppCard.isDead === false) {
-          // actual dmg is hp before - hp after, but we just track baseDmg approximation
+        if (type === 'A' || type === 'SS') {
+          const trackedDmg = Math.max(0, Math.floor(Number(baseDmg) || 0));
+          t.dmg += trackedDmg;
         }
-        const prevOppHP = oppDeck[oppIdx] ? (oppDeck[oppIdx].currentHP + Math.floor(dmg || 0)) : 0;
-        if (type === 'A' || type === 'SS') t.dmg += Math.floor(dmg || 0);
         if (type === 'H') {
           const healAmt = myCard.HealthBoost === 'FULL' ? (myCard.maxHP - myCard.currentHP) : (Number(myCard.HealthBoost) || 0);
           t.heal += Math.floor(healAmt);
