@@ -627,7 +627,7 @@
     }
     restoreDarkMode();
 
-    window.toggleDropdown = function(e) {
+    window.toggleDropdown = async function(e) {
       e && e.stopPropagation();
       const dropdown = document.getElementById('profileDropdown');
       const u = currentUser || {};
@@ -640,6 +640,17 @@
       dropdown.style.top = (rect.bottom + 8) + 'px';
       dropdown.style.right = (window.innerWidth - rect.right) + 'px';
       dropdown.classList.toggle('open');
+      try {
+        const snap = await getDoc(doc(db, 'users', u.username));
+        if (snap.exists() && tEl) {
+          const freshTeam = snap.data().teamNumber;
+          if (freshTeam) {
+            tEl.textContent = 'Team #' + freshTeam;
+            currentUser.teamNumber = freshTeam;
+            sessionStorage.setItem('frctcg_user', JSON.stringify(currentUser));
+          }
+        }
+      } catch(err) {}
     };
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.profile-circle')) {
