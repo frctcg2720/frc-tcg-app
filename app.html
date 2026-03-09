@@ -1506,9 +1506,11 @@
     };
 
     window.useAbility = function(num, event) {
+      console.log('useAbility called, num=', num, typeof num);
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
       event.currentTarget.classList.add('lit');
       selectedAbility = parseInt(num);
+      console.log('selectedAbility set to', selectedAbility, typeof selectedAbility);
     };
     window.skipTurn = function(event) {
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
@@ -1533,11 +1535,12 @@
       document.getElementById('confirmSwapBtn').style.display = 'none'; document.getElementById('actionBtn').style.display = 'block'; document.getElementById('mySide').style.display = 'flex';
     };
     window.confirmAndEndTurn = async function() {
+      console.log('confirmAndEndTurn fired, selectedAbility=', selectedAbility, typeof selectedAbility);
       const btn = document.getElementById('finalConfirmBtn'); btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
       let actionData = {};
       if (selectedAbility === 'skip') actionData = { type: 'skip' };
       else if (selectedAbility === 1 || selectedAbility === 2) actionData = { type: 'ability', slot: selectedAbility };
-      else { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
+      else { console.log('EARLY RETURN - selectedAbility was:', selectedAbility, typeof selectedAbility); btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; return; }
       await processTurn(actionData);
       btn.style.pointerEvents = 'auto'; btn.style.opacity = '1';
       document.querySelectorAll('.menu-btn').forEach(b => { b.classList.remove('lit'); b.style.backgroundColor = ''; });
